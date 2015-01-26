@@ -9,7 +9,7 @@ runHydroParameters = {
     'mode'             :  'hydro',   #the simulation type:  hydro[default], hybrid
     'model'            :  'MCGlb',   #initial condition model:  MCGlb[default], MCKLN
     'vis'              :  0.08,      #the specific shear viscosity used in the hydro simulation eta/s = 0.08 [default]
-    'Tdec'             :  0.12,      #the decoupling temperature (GeV) used in the hydro simulation Tdec = 0.12 GeV [default]
+    'Tdec'             :  0.165,      #the decoupling temperature (GeV) used in the hydro simulation Tdec = 0.12 GeV [default]
     'tau0'             :  0.6,       #the hydrodynamic starting proper time (fm/c) tau0 = 0.6 fm/c [default]
     'EOS'              :  's95p-v1', #s95p-v0-PCE165 [default], s95p-v1-PCE150, s95p-v1, SM-EOS-Q
     'cf_flag'          :  True,      #switch to perfrom Cooper-Frye freeze-out in pure hydro simulation cf_flag = True [default]

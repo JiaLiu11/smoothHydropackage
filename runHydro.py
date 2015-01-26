@@ -34,6 +34,16 @@ class color:
     underline = '\033[4m'
     end = '\033[0m'
 
+def cleanUpFolder(aDir):
+    """ Delete all data files in the given directory. """
+    if path.exists(aDir):
+        try:
+            shutil.rmtree(aDir)
+        except OSError:
+            pass # very likely the the folder is already empty
+    makedirs(aDir)
+
+
 
 def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
                                    cut_type='total_entropy'):
@@ -53,11 +63,9 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     """
     initial_path = 'RESULTS/initial_conditions'
     # hydro
-    if path.exists(path.join(hydro_path, 'results')):
-        shutil.rmtree(path.join(hydro_path, 'results'))
-    makedirs(path.join(hydro_path, 'results'))
+    cleanUpFolder(path.join(hydro_path, 'results'))
     cmd = './VISHNew.e'
-    args = (' IINIT=2 IEOS=7 iEin=1 iLS=130'
+    args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
             + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f'
             % (tau0, edec, vis, norm_factor,))
 
@@ -79,11 +87,16 @@ def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
     """
     run_hydro_evo(cen_string, hydro_path, run_record, err_record,
                   norm_factor, vis, edec, tau0)
+
+    # move hydro results to iS
+    hydro_results_path = path.join(hydro_path, 'results')
+    iS_results_path = path.join(iS_path, 'results')
+    cleanUpFolder(iS_results_path)
+    for aFile in glob(path.join(hydro_results_path, '*')):
+        if(path.exists(aFile)):
+            shutil.move(aFile, iS_results_path)
+
     # iS
-    if path.exists(path.join(iS_path, 'results')):
-        shutil.rmtree(path.join(iS_path, 'results'))
-    shutil.move(path.join(hydro_path, 'results'),
-                path.join(iS_path, 'results'))
     print "%s : %s" % (cen_string, 'iS_withResonance.sh')
     sys.stdout.flush()
     p = subprocess.Popen('./iS_withResonance.sh',
@@ -372,9 +385,8 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
 
     # initial setup
     result_folder_path = './RESULTS'
-    if path.exists(result_folder_path):
-        shutil.rmtree(result_folder_path)
-    makedirs(result_folder_path)
+    if not path.exists(result_folder_path):
+        makedirs(result_folder_path)
 
     edec = set_eos(eos_name, tdec)
 
