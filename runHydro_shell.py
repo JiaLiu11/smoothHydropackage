@@ -14,7 +14,7 @@ runHydroParameters = {
     'EOS'              :  's95p-v1', #s95p-v0-PCE165 [default], s95p-v1-PCE150, s95p-v1, SM-EOS-Q
     'cf_flag'          :  True,      #switch to perfrom Cooper-Frye freeze-out in pure hydro simulation cf_flag = True [default]
     'fit_flag'         :  True,      #switch to perfrom fit for normalization factor to charged multiplicity fit_flag = True [default]
-    'cen'              :  '10-20',   #specify the centrality bin: All [default], e.g. 20-30
+    'cen'              :  '0-5',   #specify the centrality bin: All [default], e.g. 20-30
     'collision_system' :  'Pb+Pb',   #type of collision system:  Pb+Pb[default], Au+Au, Cu+Au, U+U, p+Pb, p+Au, d+Au, He+Au
 }
 
@@ -26,7 +26,7 @@ def formAssignmentStringFromDict(aDict):
     """
     result = ""
     for aParameter in aDict.keys():
-        result += " -{}={}".format(aParameter, aDict[aParameter])
+        result += " -{} {}".format(aParameter, aDict[aParameter])
     return result
 
 
@@ -51,7 +51,7 @@ def runHydro_shell():
     executableString = './runHydro.py' + assignments
     # execute!
     print executableString
-    # run(executableString, cwd=path.abspath("./"))
+    run(executableString, cwd=path.abspath("./"))
 
 
 if __name__ == "__main__":

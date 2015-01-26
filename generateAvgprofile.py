@@ -2,7 +2,7 @@
 
 import sys, shutil
 from numpy import *
-from os import path
+from os import path, makedirs
 import subprocess
 
 class color:
@@ -207,6 +207,10 @@ def update_superMC_dict(model, ecm, collsys):
 
 def generateAvgprofile(output_path, centrality_bounds, 
                        cut_type='total_entropy'):
+    # clean up path
+    if not path.exists(output_path):
+        makedirs(output_path)
+
     runRecord = open('./runRecord.dat', 'a')
     errRecord = open('./errRecord.dat', 'a')
     translate_centrality_cut(centrality_bounds, cut_type)
