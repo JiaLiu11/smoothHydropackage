@@ -13,7 +13,7 @@ runHydroParameters = {
     'tau0'             :  0.6,       #the hydrodynamic starting proper time (fm/c) tau0 = 0.6 fm/c [default]
     'EOS'              :  's95p-v1', #s95p-v0-PCE165 [default], s95p-v1-PCE150, s95p-v1, SM-EOS-Q
     'cf_flag'          :  True,      #switch to perfrom Cooper-Frye freeze-out in pure hydro simulation cf_flag = True [default]
-    'fit_flag'         :  True,      #switch to perfrom fit for normalization factor to charged multiplicity fit_flag = True [default]
+    'fit_flag'         :  False,      #switch to perfrom fit for normalization factor to charged multiplicity fit_flag = True [default]
     'cen'              :  '0-5',   #specify the centrality bin: All [default], e.g. 20-30
     'collision_system' :  'Pb+Pb',   #type of collision system:  Pb+Pb[default], Au+Au, Cu+Au, U+U, p+Pb, p+Au, d+Au, He+Au
 }

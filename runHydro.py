@@ -17,7 +17,7 @@ dn_deta_dict = {'5500.0': 1974.234,
                 '2760.0': 1601,
                 '200.0': 691,
                 '62.4': 472, }
-
+norm_factor_guess = 10.0 # debug
 
 class color:
     """
@@ -225,7 +225,7 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0):
     err_record = open(path.join('.', err_record_file_name), 'a')
     hydro_path = path.abspath('./VISHNew')
     iS_path = path.abspath('./iS')
-    norm_factor = 10.0
+    norm_factor = norm_factor_guess
     tol = 1e-3
     target_file = 'Charged_eta_integrated_vndata.dat'
     while 1:
@@ -406,7 +406,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
             generate_avg_initial_condition(model, ecm, chosen_centrality,
                                            collsys)
         else:
-            exit(0)
+            sys.exit(0)
     else:
         initial_condition_name = '%s%.0f_sigmaNN_gauss_d0.9' % (modelsys, ecm)
         if path.isfile('./initial_conditions/%s.zip' % initial_condition_name):
@@ -426,7 +426,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
                 generate_avg_initial_condition(model, ecm, chosen_centrality, 
                                                collsys)
             else:
-                exit(0)
+                sys.exit(0)
 
     # start to run simulations
     if fit_flag:
