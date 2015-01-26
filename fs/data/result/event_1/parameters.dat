@@ -1,0 +1,6 @@
+Parameters for free-streaming and Landau matching:
+x range: -20, 20     
+y range: -20, 20     
+Rapidity range: 0, 0     
+slicing: dx=0.1, dy=0.1
+EOS: S95p-PCE
