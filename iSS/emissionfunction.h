@@ -22,7 +22,12 @@ private:
   Table *pT_tab, *phi_tab, *y_minus_eta_tab;
   int pT_tab_length, phi_tab_length, y_minus_eta_tab_length, y_minus_eta_min_index; // the y_minus_eta_min_index holds the index to the smallest positive y-eta_s value
   bool positive_y_minus_eta_table_only; // true if y_minus_eta_tab has only positive part
+
   ParameterReader *paraRdr; // used to pass-in parameters
+  int F0_IS_NOT_SMALL;
+  int USE_OSCAR_FORMAT;
+  int INCLUDE_DELTAF, INCLUDE_BULK_DELTAF;
+  int bulk_deltaf_kind;
   
   Table *dN_pTdpTdphidy; // dN / (pt dpt dphi dy)
   Table *dN_pTdpTdphidy_max; // store the largest element when summing over xt and eta to get dN / (pt dpt dphi dy); used during sampling.
@@ -49,6 +54,10 @@ private:
   Poisson poissonDistribution;
   bool particles_are_the_same(int, int);
   long *sorted_FZ;
+  
+  //array for bulk delta f coefficients
+  Table *bulkdf_coeff;
+
 public:
   EmissionFunctionArray(Table* chosen_particle, Table* pt_tab_in, Table* phi_tab_in, Table* eta_tab_in, particle_info* particles_in, int Nparticles, FO_surf* FOsurf_ptr_in, long FO_length_in, ParameterReader* paraRdr_in);
   ~EmissionFunctionArray();
@@ -84,6 +93,8 @@ public:
   string dN_deta_filename;
   void calculate_dN_dxt_using_dN_dxtdetady();
   string dN_dxt_filename;
+  void calculate_dN_dx_using_dN_dxtdetady(double x_min, double x_max, double dx);
+  string dN_dx_filename;
 
   // Second sampling method
   double calculate_dN_analytic(particle_info* particle, double mu, double Temperature);
@@ -96,6 +107,8 @@ public:
   Table pT_tab4Sampling, phi_tab4Sampling;
   int pT_tab4Sampling_length, phi_tab4Sampling_length;
   double** trig_phi_tab4Sampling;
+
+  void getbulkvisCoefficients(double Tdec, double* bulkvisCoefficients);
 };
 
 #endif
