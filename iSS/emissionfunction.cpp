@@ -3298,9 +3298,9 @@ void EmissionFunctionArray::getbulkvisCoefficients(double Tdec, double* bulkvisC
    if(bulk_deltaf_kind == 0)       // 14 moment expansion
    {
         // load from file
-        bulkvisCoefficients[0] = bulkdf_coeff->interp(1, 2, Tdec_fm, 5)/pow(hbarC, 3);  //B0 [fm^3/GeV^3]
-        bulkvisCoefficients[1] = bulkdf_coeff->interp(1, 3, Tdec_fm, 5)/pow(hbarC, 2);  // D0 [fm^3/GeV^2]
-        bulkvisCoefficients[2] = bulkdf_coeff->interp(1, 4, Tdec_fm, 5)/pow(hbarC, 3);  // E0 [fm^3/GeV^3]
+        bulkvisCoefficients[0] = bulkdf_coeff->interp(1, 2, Tdec_fm, 5, true)/pow(hbarC, 3);  //B0 [fm^3/GeV^3]
+        bulkvisCoefficients[1] = bulkdf_coeff->interp(1, 3, Tdec_fm, 5, true)/pow(hbarC, 2);  // D0 [fm^3/GeV^2]
+        bulkvisCoefficients[2] = bulkdf_coeff->interp(1, 4, Tdec_fm, 5, true)/pow(hbarC, 3);  // E0 [fm^3/GeV^3]
         // parameterization for mu = 0
         //bulkvisCoefficients[0] = exp(-15.04512474*Tdec_fm + 11.76194266)/pow(hbarC, 3); //B0[fm^3/GeV^3]
         //bulkvisCoefficients[1] = exp( -12.45699277*Tdec_fm + 11.4949293)/hbarC/hbarC;  // D0 [fm^3/GeV^2]
