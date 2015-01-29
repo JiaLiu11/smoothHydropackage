@@ -45,7 +45,7 @@ superMCParameters = {
     'output_TATB'                   :   1,
     'output_rho_binary'             :   1,
     'output_TA'                     :   1,
-    'nev'                           :   10,
+    'nev'                           :   10000,
     'average_from_order'            :   2,
     'average_to_order'              :   2,
 }

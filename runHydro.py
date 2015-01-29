@@ -401,7 +401,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     if chosen_centrality not in cen_list and chosen_centrality != 'All':
         print("initial density profiles for %s%% centrality is not found!"
               % chosen_centrality)
-        generate_flag = raw_input("Do you want to generate one right now?")
+        generate_flag = 'y'#raw_input("Do you want to generate one right now?")
         if generate_flag.lower() in ['yes', 'y']:
             generate_avg_initial_condition(model, ecm, chosen_centrality,
                                            collsys)
@@ -421,7 +421,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
             print("initial density profiles for %s%% centrality for %s %s " 
                   "at sqrt{s} = %g A GeV is not found!" 
                   % (chosen_centrality, model, collsys, ecm))
-            generate_flag = raw_input("Do you want to generate one right now?")
+            generate_flag = 'y'#raw_input("Do you want to generate one right now?")
             if generate_flag.lower() in ['yes', 'y']:
                 generate_avg_initial_condition(model, ecm, chosen_centrality, 
                                                collsys)

@@ -59,7 +59,7 @@ cutdSdy_upperBound =  10000000.0       # upper bound of the allowed total entrop
 
 # Monte Carlo Optns
 nev = 1                   # Number of collision events simulated
-randomSeed = -1           # If randomSeed < 0 then CPU time is used to seed
+randomSeed = 1            # If randomSeed < 0 then CPU time is used to seed
 backup_number = 10001     # Backs up the averaged profile every "n" events. 0 means 
                           # every step. Use a neg number to turn it off
 
@@ -118,7 +118,7 @@ ymax = 0                  # Maximum rapidity value (symmetric -ymax to ymax)
 
 
 # CC fluctions
-cc_fluctuation_model = 0  # 0: no fluctuations; 1: NBD constant k; 2: NBD use TA TB to determine n; 6: MCGlb: Gamma distribution for each collision and wounded nucleon
+cc_fluctuation_model = 6  # 0: no fluctuations; 1: NBD constant k; 2: NBD use TA TB to determine n; 6: MCGlb: Gamma distribution for each collision and wounded nucleon
 cc_fluctuation_k = 0.75   # constant k; used when cc_fluctuation_model is set to 1.
 cc_fluctuation_Gamma_theta = 0.9175    # the scale parameter for Gamma distribution theta = 0.9175 (from KNO scaling)
 
