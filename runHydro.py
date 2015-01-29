@@ -361,6 +361,7 @@ def set_eos(eos_name, tdec):
     :param tdec: the decoupling temperature (GeV)
     :return edec: the decoupling energy density (GeV/fm^3) corresponds to tdec
     """
+    fs_eos_path = './fs/EOS'
     hydro_eos_path = './VISHNew/EOS/EOS_tables'
     iS_eos_path = './iS/EOS'
     iSS_eos_path = './iSS/EOS'
@@ -377,6 +378,7 @@ def set_eos(eos_name, tdec):
 
     # copy EOS files to hydro, iS, and iSS folder
     for aFile in glob(path.join(eos_files_path, '*')):
+        shutil.copy(aFile, fs_eos_path)
         shutil.copy(aFile, hydro_eos_path)
         shutil.copy(aFile, iS_eos_path)
         shutil.copy(aFile, iSS_eos_path)
