@@ -218,6 +218,11 @@ def generateAvgprofile(output_path, centrality_bounds,
     option = form_assignment_string_from_dict(superMCParameters)
     cmd = './superMC.e' + option
     superMC_folder = path.abspath('./superMC')
+    # make result folder
+    superMC_data_folder = path.join(superMC_folder, 'data')
+    if not path.exists(superMC_data_folder):
+        makedirs(superMC_data_folder)
+
     print cmd
     runRecord.write(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=runRecord,
