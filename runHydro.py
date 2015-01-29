@@ -125,7 +125,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         shutil.rmtree(hydro_folder_path)
     makedirs(hydro_folder_path)
     cmd = './VISHNew.e'
-    args = (' IINIT=2 IEOS=7 iEin=1 iLS=130 '
+    args = (' IINIT=2 IEOS=7 iEin=1 iLS=200 '
             + 'T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f'
             % (tau0, edec, vis, norm_factor,))
 
