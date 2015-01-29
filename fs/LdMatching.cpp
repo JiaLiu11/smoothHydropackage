@@ -45,7 +45,7 @@ LdMatching::LdMatching(ParameterReader *params_in, string result_dir)
 
   EOS_type = lm_params->getVal("iEOS");
   if(EOS_type==2)
-  eos.loadEOSFromFile((char*)"s95p-PCE/EOS_converted.dat", (char*)"s95p-PCE/coeff.dat");  //load S95 EOS table
+  eos.loadEOSFromFile((char*)"EOS/EOS_PST.dat", (char*)"EOS/coeff.dat");  //load S95 EOS table
   
   outputData=lm_params->getVal("output");;  //output all data table or just print out eccentricities
   Result_Dir = result_dir;
