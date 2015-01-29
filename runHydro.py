@@ -56,17 +56,46 @@ def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
     p.wait()
     return
 
+def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0):
+    """
+        Perform pre-equilibrium evolution with averaged initial conditions
+    """
+    fs_path = './fs'
+    fs_data_path = path.join(fs_path, 'data')
+    fs_init_path = path.join(fs_data_path, 'events')
+    fs_result_path = path.join(fs_data_path, 'result', 'event_1', '%g'%tau0)
+    cleanUpFolder(fs_result_path)
+
+    # prepare initial file
+    shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+                    path.join(fs_init_path, 'sd_event_1_block.dat'))
+    # fs
+    cmd = './lm.e'
+    args= (' event_mode=1 dEdyd2rdphip_dist=0 sfactor=1.0'
+                + 'tau_min=%6.4f tau_max=%6.4f'
+                % (tau0, tau0)) 
+    sys.stdout.flush()
+    run_record.write(cmd + args)
+    p = subprocess.Popen(cmd + args, shell=True, stdout=run_record,
+                         stderr=err_record, cwd=fs_path)
+    p.wait()
+
 def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
                   norm_factor, vis, edec, tau0, pre_eq):
     """
         Perform pure hydro simulations with averaged initial conditions
     """
     initial_path = 'RESULTS/initial_conditions'
+    # clean hydro initial folder
+    hydro_initial_path = path.join(hydro_path, 'Initial')
+    cleanUpFolder(hydro_initial_path)
     # run pre-equilibrium
     if(pre_eq == True):
-        pass
-    # otherwise
-    shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+        run_pre_eq(initial_path, cen_string, run_record, err_record, tau0)
+        for aFile in glob(path.join('./fs/data/result/event_1/%g'%tau0, '*')):
+            shutil.move(aFile, hydro_initial_path)
+    else:
+        shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
                     path.join(hydro_path, 'Initial', 'InitialSd.dat'))
 
     # hydro
@@ -74,11 +103,11 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     cmd = './VISHNew.e'
     if(pre_eq == True):
         args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f, initialUread = %d'
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
                 % (tau0, edec, vis, norm_factor, pre_eq))
     else:
         args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f, initialUread = %d'
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
                 % (tau0, edec, vis, norm_factor, pre_eq))
     print "%s : %s" % (cen_string, cmd + args)
     sys.stdout.flush()
@@ -129,11 +158,15 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         shutil.rmtree(results_folder_path)
     makedirs(results_folder_path)
 
-    # if run pre-equilibrium
+    hydro_initial_path = path.join(hydro_path, 'Initial')
+    cleanUpFolder(hydro_initial_path)
+    # run pre-equilibrium
     if(pre_eq == True):
-        pass
-    # otherwise
-    shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+        run_pre_eq(initial_path, cen_string, run_record, err_record, tau0)
+        for aFile in glob(path.join('./fs/data/result/event_1/%g'%tau0, '*')):
+            shutil.move(aFile, hydro_initial_path)
+    else:
+        shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
                     path.join(hydro_path, 'Initial', 'InitialSd.dat'))
 
     # hydro
@@ -144,11 +177,11 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     cmd = './VISHNew.e'
     if(pre_eq == True):
         args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f, initialUread = %d'
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
                 % (tau0, edec, vis, norm_factor, pre_eq))
     else:
         args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f, initialUread = %d'
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
                 % (tau0, edec, vis, norm_factor, pre_eq))
 
     print "%s : %s" % (cen_string, cmd + args)
@@ -581,6 +614,7 @@ if __name__ == "__main__":
             del sys.argv[1]
         elif option == '-pre_eq':
             pre_eq  = (sys.argv[1] == 'True')
+            del sys.argv[1]
         elif option == '-h':
             print_help_message()
             sys.exit(0)
