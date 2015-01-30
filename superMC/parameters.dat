@@ -3,11 +3,11 @@
 ###############################################
 
 # Model Optns           
-which_mc_model = 5        # (1) MC-CGC 
+which_mc_model = 1        # (1) MC-CGC 
                           # (5) MC-Glb            
 
 # Sub-Model Optns                 
-sub_model = 1             # CGC-> (7) KLN model model described in
+sub_model = 7             # CGC-> (7) KLN model model described in
                           # CGC-> (100) rcbk model described in
                           # Glb-> (1) WN entropy deposited at WN positions. 
                           # Glb-> (2) WN entropy deposited (fractionally) amongst 
@@ -17,7 +17,7 @@ sub_model = 1             # CGC-> (7) KLN model model described in
 lambda = 0.138            # Lambda in the def. of (Qs)^2 which is prop. to (x0/x)^lambda 
 Et = 0                    # (0) Output gluon density; (1) Output energy density.
 lgX = 0                   # (0) Ignore large-x effects; (1) Include large-x effects.
-tmax = 71                 # Used to generate the T_A, T_B double integral lookup table. 
+tmax = 51                 # Used to generate the T_A, T_B double integral lookup table. 
 tmax_subdivision = 3      # Its reciprocal gives the step used to generate the T_A, T_B 
                           # double integral lookup table
 
@@ -28,14 +28,14 @@ glb_entropy_width = 0.5   # User specified gaussian width for the deposition of 
                           # in the Glauber model 
 
 # Nucleus Optns
-Aproj = 1                 # Projectile atomic number
-Atarg = 197               # Target atomic number
+Aproj = 208               # Projectile atomic number
+Atarg = 208               # Target atomic number
 proj_deformed = 0         # (0) Spherical nucleus; (1) Deformed nucleus (see OverLap.cpp)
 targ_deformed = 0         # (0) Spherical nucleus; (1) Deformed nucleus (see OverLap.cpp) 
 
 
 # Nucleon Optns
-shape_of_nucleons = 1     # (1) Disk-like nucleons with width given by sigmaNN 
+shape_of_nucleons = 2     # (1) Disk-like nucleons with width given by sigmaNN 
                           # (2) Gaussian nucleons with width given by sigmaNN
                           # (3) Gaussian nucleons with energy dependent width calc
                           # by Heinz and Moreland (http://arxiv.org/abs/1108.5379)
@@ -51,25 +51,25 @@ gauss_nucl_width = 0.5    # 4-> User specified width for Gaussian nucleons
 
 
 # Collision Optns
-ecm = 200                # Beam Energy sqrt(s) in GeV
+ecm = 2760                # Beam Energy sqrt(s) in GeV
 bmin = 0.0                  # Minimum sampled impact parameter
-bmax = 15.0                  # Maximum sampled impact parameter
-Npmin = 1                 # Minimum participant nucleon cut
+bmax = 3.69615                  # Maximum sampled impact parameter
+Npmin = 336                 # Minimum participant nucleon cut
 Npmax = 500              # Maximum participant nucleon cut
 
-cutdSdy = 0               # cut centrality with additional requirements on total entropy density (without normalization factor)
-cutdSdy_lowerBound =  593.51          # lower bound of the allowed total entropy density
-cutdSdy_upperBound =  889.53       # upper bound of the allowed total entropy density
+cutdSdy = 1               # cut centrality with additional requirements on total entropy density (without normalization factor)
+cutdSdy_lowerBound =  1608.28         # lower bound of the allowed total entropy density
+cutdSdy_upperBound =  1e+06       # upper bound of the allowed total entropy density
 
 
 # Monte Carlo Optns
-nev = 2000               # Number of collision events simulated
-randomSeed = -1           # If randomSeed < 0 then CPU time is used to seed
+nev = 2               # Number of collision events simulated
+randomSeed = 1           # If randomSeed < 0 then CPU time is used to seed
 backup_number = 100000     # Backs up the averaged profile every "n" events. 0 means 
                           # every step. Use a neg number to turn it off
 
 # Operation Mode Optns
-operation = 9             # (1) Generate n transverse density profiles for n events 
+operation = 3             # (1) Generate n transverse density profiles for n events 
                           # (input for event-by-event hydro)
                           # (2) Generate n transverse density profiles for n events 
                           # and their corresponding binary collision table and eccentricities
@@ -105,13 +105,13 @@ PT_Flag = 1               # Boolean toggle to output PT-integrated gluon density
 mixedMode = 0             # if > 0, calculate both the pT-unintegrated particle spectra and pT-integrated particle density
                           # All the following parameters in this block will only be effective when pT_Flag < 0 and mixedMode > 0
 PT_Min = 0.1              # Minimum value of PT
-PT_Max = 2                # Maximum value of PT
+PT_Max = 12                # Maximum value of PT
 PT_order = 2              # =1 output the usual entropy/energy density profile; =2 output pT^2 instead of pT in integrand in KLN
 d_PT = 0.1                # Step size of PT in GeV
 
 # Grid Optns
-maxx = 10                 # Max grid value along x direction in fm
-maxy = 10                 # Max grid value along y direction in fm 
+maxx = 20                 # Max grid value along x direction in fm
+maxy = 20                 # Max grid value along y direction in fm 
 dx = 0.1                  # Step size along x direction in fm
 dy = 0.1                  # Step size along y direction in fm
 ny = 1                    # Number of rapidity bins (do not set to zero)
