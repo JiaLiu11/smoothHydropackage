@@ -12,6 +12,7 @@
 #include "Spectator.h"
 
 #include "GaussianNucleonsCal.h"
+#include "GaussianDistribution.h"
 #include "ParameterReader.h"
 #include "NBD.h"
 
@@ -31,18 +32,18 @@ protected:
     GaussianNucleonsCal *gaussCal; // for Gaussian shaped nucleons calculations
     Large_x* val;
     double **TA1,**TA2;
+    double **rho_binary;
     GlueDensity *rho;
     int tmax, tmaxPt;
     double dT;
     double ***dndyTable;
-    double ***dndyTable_app; //store particle number table with PT_order_app=1
     double ****dndydptTable;
     double dndy;
     int Maxx,Maxy;
     int isKLN;
     double Xmin, Ymin, Xmax, Ymax;
     double PTinte, PTmax, PTmin, dpt, MaxPT;
-    int    PT_order, PT_order_mix, PT_order_app; //PT_order_app=1 for calculating total particle number
+    int PT_order;
     double dx,dy;
     double siginNN, siginNN200;
     double rapidity;
@@ -70,8 +71,17 @@ protected:
 
     ParameterReader* paraRdr;
     int shape_of_nucleons;
+
+    // add by Kelvin Welsh
+    int shape_of_entropy;
+    //quark_width^2 + quark_dist_width^2 = nucleon_width^2
+    double quark_dist_width; // quark_dist_width: the width of the Gaussian for the probability distribution of valence quark inside nucleon
+    double quark_width; // quark_width: the width of the Gaussian for the entropy (energy) deposition for each quark 
+    GaussianDistribution* gaussDist;
+
     int which_mc_model;
     int sub_model;
+    double entropy_gaussian_width, entropy_gaussian_width_sq;
 
 public:
     MCnucl(ParameterReader*);
@@ -83,6 +93,7 @@ public:
 
     double getTA1(int x,int y) {return TA1[x][y];}
     double getTA2(int x,int y) {return TA2[x][y];}
+    double get_rho_binary(int x, int y) {return rho_binary[x][y];}
     double getRho(int i, int x,int y) {return rho->getDensity(i,x,y);}
     double getRho(int i, int x,int y, int pt) {return rho->getDensity(i,x,y,pt);}
     void setRho(int i, int x,int y, double val) {rho->setDensity(i,x,y,val);}
@@ -90,21 +101,25 @@ public:
     int getNpart1() {return Npart1;}
     int getNpart2() {return Npart2;}
     double getdNdy() 
-    {if(PTinte) return dndy*dx*dy; 
-        else return dndy*dx*dy*dpt;}
+    {
+        if(PTinte) return dndy*dx*dy; 
+        else return dndy*dx*dy*dpt;
+    }
 
     void setOverSample(int i) {overSample=i;}
     void setRapidity(double y) {rapidity=y;}
     void generateNucleus(double b, OverLap* proj, OverLap* targ);
     void deleteNucleus();
-    void setDensity(int iy, int ipt, int pt_order_mix=0); // ipt<0: no dN/dydpt table used
+    void setDensity(int iy, int ipt); // ipt<0: no dN/dydpt table used
     void getTA2();
+    void calculate_rho_binary();    // calculate binary collision density in the transverse plane
     int  getBinaryCollision();
     int  CentralityCut();
     void setCentralityCut(int Nmin, int Nmax)
                 {NpartMax=Nmax; NpartMin=Nmin;}
     void getEccentricityGrid(double& ecc, double& eccp, double& area, double& areap, int iy);
     double getCMAng();
+    void recenterGrid(int iy, int n=2);
     void rotateGrid(int iy, int n=2);
     void makeTable();
     void makeTable(double, double, int);
