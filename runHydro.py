@@ -394,6 +394,7 @@ def set_eos(eos_name, tdec):
     :param tdec: the decoupling temperature (GeV)
     :return edec: the decoupling energy density (GeV/fm^3) corresponds to tdec
     """
+    superMC_eos_path = './superMC/s95p-PCE'
     fs_eos_path = './fs/EOS'
     hydro_eos_path = './VISHNew/EOS/EOS_tables'
     iS_eos_path = './iS/EOS'
@@ -415,6 +416,10 @@ def set_eos(eos_name, tdec):
         shutil.copy(aFile, hydro_eos_path)
         shutil.copy(aFile, iS_eos_path)
         shutil.copy(aFile, iSS_eos_path)
+        
+    # copy and rename EOS files to superMC folder
+    shutil.copy(path.join(eos_files_path, 'EOS_PST.dat'),
+                path.join(superMC_eos_path, 'EOS_converted.dat'))
 
     eos_file = np.loadtxt(path.join(hydro_eos_path, 'EOS_PST.dat'))
     edec = np.interp(tdec, eos_file[:,3], eos_file[:, 0])
