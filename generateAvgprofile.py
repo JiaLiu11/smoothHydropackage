@@ -48,6 +48,7 @@ superMCParameters = {
     'nev'                           :   10000,
     'average_from_order'            :   2,
     'average_to_order'              :   2,
+    'PT_order'                      :   1,
 }
 
 nucleus_name_dict = {
@@ -198,7 +199,9 @@ def update_superMC_dict(model, ecm, collsys):
     superMCParameters['ecm'] = ecm
     superMCParameters['Aproj'] = nucleus_number_dict[collsys[0]]
     superMCParameters['Atarg'] = nucleus_number_dict[collsys[1]]
-
+    if pre_eq == True:
+        superMCParameters['PT_order'] = 1
+        superMCParameters['cc_fluctuation_model'] = 0
     # for checking
     #for x in superMCParameters.keys():
     #    print x + ': ' + str(superMCParameters[x])
@@ -360,6 +363,9 @@ if __name__ == "__main__":
         elif option == '-output':
             folder = float(sys.argv[1])
             output_path = path.join(path.abspath('./'), folder)
+            del sys.argv[1]
+        elif option == '-pre_eq':
+            pre_eq = (sys.argv[1] == 'True')
             del sys.argv[1]
         elif option == '-h':
             print_help_message()

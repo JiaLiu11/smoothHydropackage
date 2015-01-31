@@ -46,10 +46,10 @@ def cleanUpFolder(aDir):
 
 
 def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
-                                   cut_type='total_entropy'):
+                                   cut_type='total_entropy', pre_eq):
     cmd = './generateAvgprofile.py '
-    args = ('-ecm %s -model %s -cen %s -cut_type %s -collision_system %s'
-            % (ecm, model, chosen_centrality, cut_type, collsys))
+    args = ('-ecm %s -model %s -cen %s -cut_type %s -collision_system %s -pre_eq %s'
+            % (ecm, model, chosen_centrality, cut_type, collsys, pre_eq))
     print "Generating event-averaged initial conditions..."
     print(cmd + args)
     p = subprocess.Popen(cmd + args, shell=True, cwd='./')
@@ -462,7 +462,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
         generate_flag = 'y'#raw_input("Do you want to generate one right now?")
         if generate_flag.lower() in ['yes', 'y']:
             generate_avg_initial_condition(model, ecm, chosen_centrality,
-                                           collsys)
+                                           collsys, pre_eq)
         else:
             sys.exit(0)
     else:
@@ -482,7 +482,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
             generate_flag = 'y'#raw_input("Do you want to generate one right now?")
             if generate_flag.lower() in ['yes', 'y']:
                 generate_avg_initial_condition(model, ecm, chosen_centrality, 
-                                               collsys)
+                                               collsys, pre_eq)
             else:
                 sys.exit(0)
 
