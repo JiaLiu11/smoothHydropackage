@@ -200,8 +200,9 @@ def update_superMC_dict(model, ecm, collsys):
     superMCParameters['Aproj'] = nucleus_number_dict[collsys[0]]
     superMCParameters['Atarg'] = nucleus_number_dict[collsys[1]]
     if pre_eq == True:
+        superMCParameters['PT_order'] = 2
+    else:
         superMCParameters['PT_order'] = 1
-        superMCParameters['cc_fluctuation_model'] = 0
     # for checking
     #for x in superMCParameters.keys():
     #    print x + ': ' + str(superMCParameters[x])
