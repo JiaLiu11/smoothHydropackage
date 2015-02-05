@@ -477,7 +477,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
         else:
             initial_condition_name = '%s%.0f_sigmaNN_gauss_d0.9' % (modelsys, ecm)            
         if path.isfile('./initial_conditions/%s.zip' % initial_condition_name):
-            p = subprocess.Popen('unzip -q %s.zip' % initial_condition_name, 
+            p = subprocess.Popen('unzip -qo %s.zip' % initial_condition_name, 
                                  shell=True, stdout=subprocess.PIPE, 
                                  cwd='./initial_conditions')
             p.wait()
