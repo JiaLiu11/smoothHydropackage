@@ -471,9 +471,13 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
         else:
             sys.exit(0)
     else:
-        initial_condition_name = '%s%.0f_sigmaNN_gauss_d0.9' % (modelsys, ecm)
+        if modelsys == "MCKLN":
+            preEq_string = "_preEq" if pre_eq == True else "_nopreEq"
+            initial_condition_name = '%s%.0f_sigmaNN_gauss_d0.9%s' % (modelsys, ecm, preEq_string)
+        else:
+            initial_condition_name = '%s%.0f_sigmaNN_gauss_d0.9' % (modelsys, ecm)            
         if path.isfile('./initial_conditions/%s.zip' % initial_condition_name):
-            p = subprocess.Popen('unzip %s.zip' % initial_condition_name, 
+            p = subprocess.Popen('unzip -q %s.zip' % initial_condition_name, 
                                  shell=True, stdout=subprocess.PIPE, 
                                  cwd='./initial_conditions')
             p.wait()
