@@ -46,7 +46,7 @@ def cleanUpFolder(aDir):
 
 
 def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
-                                   cut_type='total_entropy', pre_eq):
+                                   cut_type='total_entropy', pre_eq=False):
     cmd = './generateAvgprofile.py '
     args = ('-ecm %s -model %s -cen %s -cut_type %s -collision_system %s -pre_eq %s'
             % (ecm, model, chosen_centrality, cut_type, collsys, pre_eq))
