@@ -502,11 +502,11 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     else:
         norm_factor = norm_factor_guess#float(input("Please input the normalization factor: "))
     if mode == 'hydro':
-        print "running pure hydro simulations for all centrality bins ..."
+        print "running pure hydro simulations for centrality bin(s): %s ..."%chosen_centrality
         run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
                       eos_name, cf_flag, chosen_centrality, pre_eq)
     elif mode == 'hybrid':
-        print "running hybrid simulations for all centrality bins ..."
+        print "running hybrid simulations for centrality bin(s): %s..."%chosen_centrality
         run_hybrid(model, ecm, norm_factor, vis, tdec, edec, tau0,
                    eos_name, chosen_centrality, pre_eq)
     else:
