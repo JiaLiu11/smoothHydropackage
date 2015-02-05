@@ -481,9 +481,12 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
                                  shell=True, stdout=subprocess.PIPE, 
                                  cwd='./initial_conditions')
             p.wait()
-            shutil.move(
-                path.join('./initial_conditions', initial_condition_name),
-                path.join(result_folder_path, 'initial_conditions'))
+            # move initial profiles
+            move_cmd = "mv -f ./initial_conditions/%s/* %s/initial_conditions/"%(
+                initial_condition_name, result_folder_path)
+            p = subprocess.Popen(move_cmd, shell=True, stdout=subprocess.PIPE,
+                cwd='./')
+            p.wait()
         else:
             print("initial density profiles for %s%% centrality for %s %s " 
                   "at sqrt{s} = %g A GeV is not found!" 
