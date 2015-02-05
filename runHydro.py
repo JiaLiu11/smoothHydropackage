@@ -72,7 +72,7 @@ def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0):
     # fs
     cmd = './lm.e'
     args= (' event_mode=1 dEdyd2rdphip_dist=0 sfactor=1.0'
-                + 'tau_min=%6.4f tau_max=%6.4f'
+                + ' tau_min=%6.4f tau_max=%6.4f'
                 % (tau0, tau0)) 
     sys.stdout.flush()
     run_record.write(cmd + args)
