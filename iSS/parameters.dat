@@ -33,8 +33,8 @@ dN_dy_sampling_para3 = 0               # Additional parameters for dN/dy samplin
 dN_dy_sampling_para4 = 0               # Additional parameters for dN/dy sampling. 
 dN_dy_sampling_para5 = 0               # Additional parameters for dN/dy sampling. 
 
-y_LB = -2.5                            # lower bound for y-sampling; used in "conventional" sampling
-y_RB = 2.5                             # upper bound for y-sampling; used in "conventional" sampling
+y_LB = -4.5                            # lower bound for y-sampling; used in "conventional" sampling
+y_RB = 4.5                             # upper bound for y-sampling; used in "conventional" sampling
 
 eta_s_LB = -0.5                          # lower bound for eta_s sampling; used only when sampling using total energy flux
 eta_s_RB = 0.5                           # upper bound for eta_s sampling.
@@ -53,7 +53,7 @@ calculate_vn_to_order = 9              # v_n's are calculated up to this order
 number_of_repeated_sampling = 100      # How many times should the sampling be repeated.
 
 sample_pT_up_to = -1                   # Up to this value will pT be sampled; if<0 then use the largest value in the pT table.
-sample_y_minus_eta_s_range = 2         # y_minus_eta_s will be sampled between +- this value. It is used only when sampling using sample_using_dN_dxtdy_4all_particles function.
+sample_y_minus_eta_s_range = 1         # y_minus_eta_s will be sampled between +- this value. It is used only when sampling using sample_using_dN_dxtdy_4all_particles function.
 
 use_pos_dN_only = 0                    # 1/0: When set to 1, all negative emission functions will be skipped. Effects the both dN_ptdptdphidy and dN_dxtdetady calculations. 
 
