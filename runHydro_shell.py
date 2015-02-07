@@ -6,15 +6,15 @@ from sys import stdout
 
 runHydroParameters = {
     'ecm'              :  2760,      # collision energy (GeV): 7.7, 11.5, 19.6, 27, 39, 62.4, 200, 2760
-    'mode'             :  'hydro',   #the simulation type:  hydro[default], hybrid
+    'mode'             :  'hybrid',   #the simulation type:  hydro[default], hybrid
     'model'            :  'MCGlb',   #initial condition model:  MCGlb[default], MCKLN
-    'vis'              :  0.08,      #the specific shear viscosity used in the hydro simulation eta/s = 0.08 [default]
+    'vis'              :  0.0682,      #the specific shear viscosity used in the hydro simulation eta/s = 0.08 [default]
     'Tdec'             :  0.155,      #the decoupling temperature (GeV) used in the hydro simulation Tdec = 0.12 GeV [default]
-    'tau0'             :  0.6,       #the hydrodynamic starting proper time (fm/c) tau0 = 0.6 fm/c [default]
-    'EOS'              :  's95p-v1', #s95p-v0-PCE165 [default], s95p-v1-PCE150, s95p-v1, SM-EOS-Q
+    'tau0'             :  0.776,       #the hydrodynamic starting proper time (fm/c) tau0 = 0.6 fm/c [default]
+    'EOS'              :  's95p-v0-PCE165', #s95p-v0-PCE165 [default], s95p-v1-PCE150, s95p-v1, SM-EOS-Q
     'cf_flag'          :  True,      #switch to perfrom Cooper-Frye freeze-out in pure hydro simulation cf_flag = True [default]
     'fit_flag'         :  True,      #switch to perfrom fit for normalization factor to charged multiplicity fit_flag = True [default]
-    'cen'              :  '10-20',   #specify the centrality bin: All [default], e.g. 20-30
+    'cen'              :  '0-5',   #specify the centrality bin: All [default], e.g. 20-30
     'collision_system' :  'Pb+Pb',   #type of collision system:  Pb+Pb[default], Au+Au, Cu+Au, U+U, p+Pb, p+Au, d+Au, He+Au
     'pre_eq'           :  False,      #whether to include initial pre-equilibrium
     'parallel_mode'    :  2,         #switch to run osc2u and urqmd in parallel mode by splitting iSS resampled events to parallel_mode pieces
