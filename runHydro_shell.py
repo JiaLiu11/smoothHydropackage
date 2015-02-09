@@ -17,6 +17,7 @@ runHydroParameters = {
     'cen'              :  '10-20',   #specify the centrality bin: All [default], e.g. 20-30
     'collision_system' :  'Pb+Pb',   #type of collision system:  Pb+Pb[default], Au+Au, Cu+Au, U+U, p+Pb, p+Au, d+Au, He+Au
     'pre_eq'           :  False,      #whether to include initial pre-equilibrium
+    'parallel_mode'    :  2,         #switch to run osc2u and urqmd in parallel mode by splitting iSS resampled events to parallel_mode pieces
 }
 
 

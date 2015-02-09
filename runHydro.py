@@ -119,7 +119,7 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
 def split_iSS_events(number_of_split, 
                     temp_folder = "./temp_nodes", 
                     subfolder_pattern = "node_%d",
-                    temp_output_folder = "./temp_output",
+                    output_folder = "./temp_output",
                     input_file = "OSCAR.DAT"):
     """
         Sequentially implement the OSCAR events divide and conquer:
@@ -189,16 +189,18 @@ def split_iSS_events(number_of_split,
 
     # collect data
     result_files = []
-    cleanUpFolder(temp_output_folder)
+    if not path.exists(output_folder): makedirs(output_folder)
     for node_i in range(number_of_split):
         folder_i = path.join(temp_folder, subfolder_pattern%node_i)
         source_file = path.join(folder_i, "urqmd", "particle_list.dat")
-        target_file = path.join(temp_output_folder, "particle_list_%d.dat"%node_i)
+        target_file = path.join(output_folder, "particle_list_%d.dat"%node_i)
         # ignore if not such file
         if not path.isfile(source_file): continue
+        # overwrite if target file exists
+        if path.isfile(target_file): remove(target_file)
         shutil.move(source_file, target_file)
         result_files.append(target_file)
-    print "urQMD result files saved to folder %s!\n"%temp_output_folder
+    print "urQMD result files saved to folder %s!\n"%output_folder
 
     # clean and quit
     shutil.rmtree(temp_folder)
@@ -234,7 +236,7 @@ def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
 def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
                            run_record, err_record,
                            norm_factor, vis, tdec, edec, tau0, eos_name,
-                           pre_eq):
+                           pre_eq, parallel_mode):
     """
         Perform hydro + UrQMD hybrid simulations with averaged initial
         conditions
@@ -287,68 +289,73 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         if aFile in worth_storing:
             shutil.copy(aFile, results_folder_path)
 
-    # iSS
-    iSS_folder_path = path.join(iSS_path, 'results')
-    if path.exists(iSS_folder_path):
-        shutil.rmtree(iSS_folder_path)
-    output_file = 'OSCAR.DAT'
-    if path.isfile(path.join(iSS_path, output_file)):
-        remove(path.join(iSS_path, output_file))
-    shutil.move(path.join(hydro_path, 'results'),
-                path.join(iSS_path, 'results'))
-    print "%s : %s" % (cen_string, 'iSS.e')
-    sys.stdout.flush()
-    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
-                         stdout=run_record, stderr=err_record, cwd=iSS_path)
-    p.wait()
-    worth_storing = []
-    for aGlob in ['*vn*.dat']:
-        worth_storing.extend(glob(path.join(iSS_folder_path, aGlob)))
-    for aFile in glob(path.join(iSS_folder_path, '*')):
-        if aFile in worth_storing:
-            shutil.copy(aFile, results_folder_path)
-    shutil.rmtree(iSS_folder_path)  # clean up
+    if parallel_mode != 0:
+        # run subsequent programs in parallel
+        result_files = split_iSS_events(number_of_split = parallel_mode,
+                                        output_folder = results_folder_path)
+    else:
+        # iSS
+        iSS_folder_path = path.join(iSS_path, 'results')
+        if path.exists(iSS_folder_path):
+            shutil.rmtree(iSS_folder_path)
+        output_file = 'OSCAR.DAT'
+        if path.isfile(path.join(iSS_path, output_file)):
+            remove(path.join(iSS_path, output_file))
+        shutil.move(path.join(hydro_path, 'results'),
+                    path.join(iSS_path, 'results'))
+        print "%s : %s" % (cen_string, 'iSS.e')
+        sys.stdout.flush()
+        p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                             stdout=run_record, stderr=err_record, cwd=iSS_path)
+        p.wait()
+        worth_storing = []
+        for aGlob in ['*vn*.dat']:
+            worth_storing.extend(glob(path.join(iSS_folder_path, aGlob)))
+        for aFile in glob(path.join(iSS_folder_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, results_folder_path)
+        shutil.rmtree(iSS_folder_path)  # clean up
 
-    #osc2u
-    o2u_path = path.abspath('./osc2u')
-    input_file = 'OSCAR.DAT'
-    output_file = 'fort.14'
-    if path.isfile(path.join(o2u_path, input_file)):
-        remove(path.join(o2u_path, input_file))
-    if path.isfile(path.join(o2u_path, output_file)):
-        remove(path.join(o2u_path, output_file))
-    shutil.move(path.join(iSS_path, input_file), o2u_path)
-    print "%s : %s" % (cen_string, 'osu2u.e')
-    sys.stdout.flush()
-    p = subprocess.Popen('./osc2u.e < %s' % input_file, shell=True,
-                         stdout=run_record, stderr=err_record, cwd=o2u_path)
-    p.wait()
-    remove(path.join(o2u_path, input_file))  # clean up
+        #osc2u
+        o2u_path = path.abspath('./osc2u')
+        input_file = 'OSCAR.DAT'
+        output_file = 'fort.14'
+        if path.isfile(path.join(o2u_path, input_file)):
+            remove(path.join(o2u_path, input_file))
+        if path.isfile(path.join(o2u_path, output_file)):
+            remove(path.join(o2u_path, output_file))
+        shutil.move(path.join(iSS_path, input_file), o2u_path)
+        print "%s : %s" % (cen_string, 'osu2u.e')
+        sys.stdout.flush()
+        p = subprocess.Popen('./osc2u.e < %s' % input_file, shell=True,
+                             stdout=run_record, stderr=err_record, cwd=o2u_path)
+        p.wait()
+        remove(path.join(o2u_path, input_file))  # clean up
 
-    #UrQMD
-    UrQMD_path = path.abspath('./urqmd')
-    input_file = 'OSCAR.input'
-    output_file = 'particle_list.dat'
-    if path.isfile(path.join(UrQMD_path, input_file)):
-        remove(path.join(UrQMD_path, input_file))
-    if path.isfile(path.join(UrQMD_path, output_file)):
-        remove(path.join(UrQMD_path, output_file))
-    shutil.move(path.join(o2u_path, 'fort.14'),
-                path.join(UrQMD_path, input_file))
-    print "%s : %s" % (cen_string, 'runqmd.sh')
-    sys.stdout.flush()
-    p = subprocess.Popen('bash runqmd.sh', shell=True, stdout=run_record,
-                         stderr=err_record, cwd=UrQMD_path)
-    p.wait()
+        #UrQMD
+        UrQMD_path = path.abspath('./urqmd')
+        input_file = 'OSCAR.input'
+        output_file = 'particle_list.dat'
+        if path.isfile(path.join(UrQMD_path, input_file)):
+            remove(path.join(UrQMD_path, input_file))
+        if path.isfile(path.join(UrQMD_path, output_file)):
+            remove(path.join(UrQMD_path, output_file))
+        shutil.move(path.join(o2u_path, 'fort.14'),
+                    path.join(UrQMD_path, input_file))
+        print "%s : %s" % (cen_string, 'runqmd.sh')
+        sys.stdout.flush()
+        p = subprocess.Popen('bash runqmd.sh', shell=True, stdout=run_record,
+                             stderr=err_record, cwd=UrQMD_path)
+        p.wait()
 
-    worth_storing = []
-    for aGlob in ['particle_list.dat']:
-        worth_storing.extend(glob(path.join(UrQMD_path, aGlob)))
-    for aFile in glob(path.join(UrQMD_path, '*')):
-        if aFile in worth_storing:
-            shutil.copy(aFile, results_folder_path)
-    remove(path.join(UrQMD_path, input_file))  # clean up
-    remove(path.join(UrQMD_path, output_file))  # clean up
+        worth_storing = []
+        for aGlob in ['particle_list.dat']:
+            worth_storing.extend(glob(path.join(UrQMD_path, aGlob)))
+        for aFile in glob(path.join(UrQMD_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, results_folder_path)
+        remove(path.join(UrQMD_path, input_file))  # clean up
+        remove(path.join(UrQMD_path, output_file))  # clean up
 
 
 def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq):
@@ -449,7 +456,8 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
 
 
 def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
-               tau0, eos_name, chosen_centrality, pre_eq):
+               tau0, eos_name, chosen_centrality, pre_eq,
+               parallel_mode):
     """
     shell function for running hybrid calculations for all centrality bins.
     """
@@ -465,13 +473,14 @@ def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
             run_hybrid_calculation(cen_list[icen], model, ecm,
                                    hydro_path, iSS_path,
                                    run_record, err_record, norm_factor,
-                                   vis, tdec, edec, tau0, eos_name, pre_eq)
+                                   vis, tdec, edec, tau0, eos_name, pre_eq,
+                                   parallel_mode)
     else:
         run_hybrid_calculation(chosen_centrality, model, ecm,
                                hydro_path, iSS_path,
                                run_record, err_record,
                                norm_factor, vis, tdec, edec, tau0, eos_name,
-                               pre_eq)
+                               pre_eq, parallel_mode)
 
     shutil.move(path.join('.', run_record_file_name), 'RESULTS')
     shutil.move(path.join('.', err_record_file_name), 'RESULTS')
@@ -515,7 +524,8 @@ def set_eos(eos_name, tdec):
     return edec
 
 def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
-                    cf_flag, fit_flag, chosen_centrality, collsys, pre_eq):
+                    cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
+                    parallel_mode):
     """
     shell function to run simulations
     :param mode: simulation mode: hydro or hybrid
@@ -600,7 +610,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     elif mode == 'hybrid':
         print "running hybrid simulations for centrality bin(s): %s..."%chosen_centrality
         run_hybrid(model, ecm, norm_factor, vis, tdec, edec, tau0,
-                   eos_name, chosen_centrality, pre_eq)
+                   eos_name, chosen_centrality, pre_eq, parallel_mode)
     else:
         print sys.argv[0], ': invalid running mode', mode
         sys.exit(1)
@@ -660,6 +670,10 @@ def print_help_message():
     print(color.bold + "-pre_eq" + color.end
           + "   switch to perfrom pre-equilibrium before hydro: "
           + color.purple + color.bold + "False [default]" + color.end)
+    print(color.bold + "-parallel_mode" + color.end
+          + "   switch to split iSS events and run osc2u+urqmd in parallel: "
+          + color.purple + color.bold + "0 [default]" + color.end
+          + color.purple + ', e.g. integer N (>1) to split iSS events to N pieces' + color.end)
     print(color.bold + "-h | -help" + color.end + "    This message")
 
 
@@ -676,6 +690,7 @@ if __name__ == "__main__":
     cf_flag = True
     fit_flag = True
     pre_eq = False
+    parallel_mode = 0
 
     while len(sys.argv) > 1:
         option = sys.argv[1]
@@ -716,6 +731,9 @@ if __name__ == "__main__":
         elif option == '-pre_eq':
             pre_eq  = (sys.argv[1] == 'True')
             del sys.argv[1]
+        elif option == '-parallel_mode':
+            parallel_mode  = int(sys.argv[1])
+            del sys.argv[1]
         elif option == '-h':
             print_help_message()
             sys.exit(0)
@@ -755,7 +773,8 @@ if __name__ == "__main__":
 
     if mode in ['hydro', 'hybrid']:
         run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
-                        cf_flag, fit_flag, chosen_centrality, collsys, pre_eq)
+                        cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
+                        parallel_mode)
     else:
         print sys.argv[0], ': invalid running mode', mode
         print_help_message()
