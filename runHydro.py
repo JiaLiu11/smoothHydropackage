@@ -116,6 +116,95 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
                          stderr=err_record, cwd=hydro_path)
     p.wait()
 
+def split_iSS_events(number_of_split, 
+                    temp_folder = "./temp_nodes", 
+                    subfolder_pattern = "node_%d",
+                    temp_output_folder = "./temp_output",
+                    input_file = "OSCAR.DAT"):
+    """
+        Sequentially implement the OSCAR events divide and conquer:
+        1. split input file into N pieces using script split_events.py;
+        2. replicate osc2u and UrQMD codes N times;
+        3. move and rename the input file to replicated folders;
+        4. run osc2u and urqmd in parallel;
+        5. collect data and clean up temporary folders.
+    """
+    iSS_path = "./iSS"
+    osc2u_path = "./osc2u"
+    urqmd_path = "./urqmd"
+
+    # split OSCAR file
+    split_script = path.join(iSS_path, "split_events.py")
+    # check input
+    if not path.isfile(path.join(iSS_path, input_file)):
+        print "No input file %s under iSS folder!"%input_file
+        sys.exit(-1)
+    if type(number_of_split) is not int:
+        print "Check input of number_of_split: %g"%number_of_split
+        number_of_split = int(number_of_split)
+    split_cmd = 'python split_events.py %s %d'%(input_file, number_of_split)
+    print "Start to split input file: %s"%input_file + "."*3
+    p = subprocess.Popen(split_cmd, shell=True, cwd = iSS_path)
+    p.wait()
+    print "%s splitted!\n"%split_script
+
+    # replicate osc2u and urqmd
+    print "Start to copy osc2u, urqmd folders and input files"+'.'*3
+    cleanUpFolder(temp_folder)
+    for node_i in range(number_of_split):
+        folder_i = path.join(temp_folder, subfolder_pattern%node_i)
+        cleanUpFolder(folder_i)
+        # copy codes
+        shutil.copytree(osc2u_path, path.join(folder_i, 'osc2u'))
+        shutil.copytree(urqmd_path, path.join(folder_i, 'urqmd'))
+        # copy input file
+        source_file_pattern = input_file.split('.')[0] + "_%d.dat" # according to the file format in split_events.py
+        source_file = path.join(iSS_path, source_file_pattern%node_i)
+        # copy osc2u and urqmd running script
+        shutil.copy('./run_osc2u_urqmd.sh', folder_i)
+        # check file exist
+        if not path.isfile(source_file):
+            print "Input file: %s does not exist! "%source_file
+            sys.exit(-1)
+        target_file = path.join(folder_i, "osc2u", input_file)
+        shutil.move(source_file, target_file)
+    print "Parallel folders created at %s!\n"%temp_folder
+
+    # run splitted osc2u urqmd in parallel, ref to 
+    process_list = []
+    for node_i in range(number_of_split):
+        folder_i = path.join(temp_folder, subfolder_pattern%node_i)
+        # delete output files if exists
+        if path.isfile(path.join(folder_i, 'osc2u', 'fort.14')):
+            remove(path.join(folder_i, 'osc2u', 'fort.14'))
+        if path.isfile(path.join(folder_i, 'urqmd', 'particle_list.dat')):
+            remove(path.join(folder_i, 'urqmd', 'particle_list.dat'))
+        cmd_string = "bash ./run_osc2u_urqmd.sh"
+        p = subprocess.Popen(cmd_string, shell=True, cwd=folder_i)
+        process_list.append(p)
+    # waiting untill all process finish
+    print "Waiting for all processes to complete, please be patient..."
+    for p in process_list: p.wait()
+    print "All osc2u and urqmd processes finished!"
+
+    # collect data
+    result_files = []
+    cleanUpFolder(temp_output_folder)
+    for node_i in range(number_of_split):
+        folder_i = path.join(temp_folder, subfolder_pattern%node_i)
+        source_file = path.join(folder_i, "urqmd", "particle_list.dat")
+        target_file = path.join(temp_output_folder, "particle_list_%d.dat"%node_i)
+        # ignore if not such file
+        if not path.isfile(source_file): continue
+        shutil.move(source_file, target_file)
+        result_files.append(target_file)
+    print "urQMD result files saved to folder %s!\n"%temp_output_folder
+
+    # clean and quit
+    shutil.rmtree(temp_folder)
+    return result_files
+
+
 def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
                       norm_factor, vis, edec, tau0, pre_eq):
     """
