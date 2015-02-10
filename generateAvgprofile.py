@@ -41,7 +41,7 @@ superMCParameters = {
     'alpha'                         :   0.148,
     'lambda'                        :   0.138,
     'operation'                     :   3,
-    'cc_fluctuation_model'          :   0,
+    'cc_fluctuation_model'          :   6,
     'output_TATB'                   :   1,
     'output_rho_binary'             :   1,
     'output_TA'                     :   1,
