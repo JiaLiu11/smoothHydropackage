@@ -482,8 +482,8 @@ def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
                                norm_factor, vis, tdec, edec, tau0, eos_name,
                                pre_eq, parallel_mode)
 
-    shutil.move(path.join('.', run_record_file_name), 'RESULTS')
-    shutil.move(path.join('.', err_record_file_name), 'RESULTS')
+    shutil.copy(path.join('.', run_record_file_name), 'RESULTS')
+    shutil.copy(path.join('.', err_record_file_name), 'RESULTS')
 
 def set_eos(eos_name, tdec):
     """
