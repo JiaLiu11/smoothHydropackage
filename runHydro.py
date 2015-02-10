@@ -566,7 +566,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
         generate_flag = 'y'#raw_input("Do you want to generate one right now?")
         if generate_flag.lower() in ['yes', 'y']:
             generate_avg_initial_condition(model, ecm, chosen_centrality,
-                                           collsys, pre_eq)
+                                           collsys, pre_eq=pre_eq)
         else:
             sys.exit(0)
     else:
@@ -593,7 +593,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
             generate_flag = 'y'#raw_input("Do you want to generate one right now?")
             if generate_flag.lower() in ['yes', 'y']:
                 generate_avg_initial_condition(model, ecm, chosen_centrality, 
-                                               collsys, pre_eq)
+                                               collsys, pre_eq=pre_eq)
             else:
                 sys.exit(0)
 
