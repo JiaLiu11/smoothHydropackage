@@ -289,33 +289,33 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         if aFile in worth_storing:
             shutil.copy(aFile, results_folder_path)
 
+    # iSS
+    iSS_folder_path = path.join(iSS_path, 'results')
+    if path.exists(iSS_folder_path):
+        shutil.rmtree(iSS_folder_path)
+    output_file = 'OSCAR.DAT'
+    if path.isfile(path.join(iSS_path, output_file)):
+        remove(path.join(iSS_path, output_file))
+    shutil.move(path.join(hydro_path, 'results'),
+                path.join(iSS_path, 'results'))
+    print "%s : %s" % (cen_string, 'iSS.e')
+    sys.stdout.flush()
+    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                         stdout=run_record, stderr=err_record, cwd=iSS_path)
+    p.wait()
+    worth_storing = []
+    for aGlob in ['*vn*.dat']:
+        worth_storing.extend(glob(path.join(iSS_folder_path, aGlob)))
+    for aFile in glob(path.join(iSS_folder_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, results_folder_path)
+    shutil.rmtree(iSS_folder_path)  # clean up
+
     if parallel_mode != 0:
         # run subsequent programs in parallel
         result_files = split_iSS_events(number_of_split = parallel_mode,
                                         output_folder = results_folder_path)
     else:
-        # iSS
-        iSS_folder_path = path.join(iSS_path, 'results')
-        if path.exists(iSS_folder_path):
-            shutil.rmtree(iSS_folder_path)
-        output_file = 'OSCAR.DAT'
-        if path.isfile(path.join(iSS_path, output_file)):
-            remove(path.join(iSS_path, output_file))
-        shutil.move(path.join(hydro_path, 'results'),
-                    path.join(iSS_path, 'results'))
-        print "%s : %s" % (cen_string, 'iSS.e')
-        sys.stdout.flush()
-        p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
-                             stdout=run_record, stderr=err_record, cwd=iSS_path)
-        p.wait()
-        worth_storing = []
-        for aGlob in ['*vn*.dat']:
-            worth_storing.extend(glob(path.join(iSS_folder_path, aGlob)))
-        for aFile in glob(path.join(iSS_folder_path, '*')):
-            if aFile in worth_storing:
-                shutil.copy(aFile, results_folder_path)
-        shutil.rmtree(iSS_folder_path)  # clean up
-
         #osc2u
         o2u_path = path.abspath('./osc2u')
         input_file = 'OSCAR.DAT'
