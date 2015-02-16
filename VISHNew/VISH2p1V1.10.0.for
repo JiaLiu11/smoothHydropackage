@@ -1078,14 +1078,12 @@ CSHEN====END====================================================================
           PPI = 0D0
         endif
         
-
       call dpSc8(TT00,TT01,TT02,ScT00,ScT01,ScT02,Vx,Vy,
      &  Pi00,Pi01,Pi02,Pi33,Pi11,Pi12,Pi22, PScT00,PScT01,PScT02,PScT33,
      &  PScT11,PScT12,PScT22,etaTtp0,etaTtp,  PPI,PISc, XiTtP0,XiTtP,
      &  U0,U1,U2, PU0,PU1,PU2,SxyT,Stotal,StotalBv,StotalSv,
      &  Ed,PL,Bd,Sd,Temp0,Temp,CMu, T00,T01,T02, IAA,CofAA,Time,DX,DY,
      &  DZ,DT,NXPhy0,NYPhy0,NXPhy,NYPhy,NX0,NX,NY0,NY,NZ0,NZ,PNEW,NNEW)  !PNEW NNEW  related to root finding
-
         DIFFC = 0.125D0
         !DIFFC = 0D0
         if(ViscousC > 1D-6) then 
@@ -2521,7 +2519,19 @@ CSHEN======end=================================================================
         !eta=ViscousC*Sd(i,j,k)
         !VBulk(i,j,k)=VisBulk*BulkAdSH0(eta,ttemp)
         !VBulk(i,j,k) = ViscousZetasTemp(Ed(i,j,k)*HbarC)*Sd(i,j,k)
+        ! temperature dependent bulk viscosity
+        tOverTc = ttemp/0.18d0 !T/T_c
+        if(tOverTc .lt. 0.995d0) then
+          VisBulk = 0.9d0*exp((tOverTc-1.D0)/2.5e-3) + 
+     &           0.22d0*exp((tOverTc-1.d0)/2.2e-2) + 0.03
+        else if ((tOverTc .ge. 0.995) .and. (tOverTc .le. 1.05)) then
+          VisBulk = -13.77d0*tOverTc**2.d0 + 27.55d0*tOverTc - 13.45d0
+        else
+          VisBulk = 0.9d0*exp(-(tOverTc-1.d0)/2.5e-2) + 
+     &           0.25d0*exp(-(tOverTc-1.d0)/0.13d0)+0.001
+        endif
         VBulk(i,j,k) = VisBulk*Sd(i,j,k) !jia test
+
         If (IRelaxBulk.eq.0) then
           TTpi=DMax1(0.1d0, 120* VBulk(i,j,k)/DMax1(Sd(i,j,k),0.1d0))
           VRelaxT0(i,j,k)=1.0/TTpi

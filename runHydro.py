@@ -549,6 +549,8 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     result_folder_path = './RESULTS'
     if not path.exists(result_folder_path):
         makedirs(result_folder_path)
+    if not path.exists(path.join(result_folder_path, 'initial_conditions')):
+        makedirs(path.join(result_folder_path, 'initial_conditions'))
 
     edec = set_eos(eos_name, tdec)
 
