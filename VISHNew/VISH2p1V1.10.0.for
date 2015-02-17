@@ -2519,18 +2519,9 @@ CSHEN======end=================================================================
         !eta=ViscousC*Sd(i,j,k)
         !VBulk(i,j,k)=VisBulk*BulkAdSH0(eta,ttemp)
         !VBulk(i,j,k) = ViscousZetasTemp(Ed(i,j,k)*HbarC)*Sd(i,j,k)
-        ! temperature dependent bulk viscosity
-        tOverTc = ttemp/0.18d0 !T/T_c
-        if(tOverTc .lt. 0.995d0) then
-          VisBulk = 0.9d0*exp((tOverTc-1.D0)/2.5e-3) + 
-     &           0.22d0*exp((tOverTc-1.d0)/2.2e-2) + 0.03
-        else if ((tOverTc .ge. 0.995) .and. (tOverTc .le. 1.05)) then
-          VisBulk = -13.77d0*tOverTc**2.d0 + 27.55d0*tOverTc - 13.45d0
-        else
-          VisBulk = 0.9d0*exp(-(tOverTc-1.d0)/2.5e-2) + 
-     &           0.25d0*exp(-(tOverTc-1.d0)/0.13d0)+0.001
-        endif
-        VBulk(i,j,k) = VisBulk*Sd(i,j,k) !jia test
+        !VBulk(i,j,k) = VisBulk*Sd(i,j,k) !jia test
+!       temperature dependent bulk viscosity
+        VBulk(i,j,k) = ViscousZetasParametrization(ttemp)*Sd(i,j,k)
 
         If (IRelaxBulk.eq.0) then
           TTpi=DMax1(0.1d0, 120* VBulk(i,j,k)/DMax1(Sd(i,j,k),0.1d0))
@@ -2629,6 +2620,31 @@ C     &          *(1-Cper)  !HRG
            BulkAdSH0=Zeta
        return
        end
+
+
+C===============zeta/s parameterized form==================================
+      double precision function ViscousZetasParametrization(t_temp)
+      ! t_temp should have unit GeV
+      Implicit double precision (A-H, O-Z)
+
+      tOverTc = t_temp/0.18d0 !T/T_c, T_c = 0.18 GeV
+      if(tOverTc .lt. 0.995d0) then
+        VisBulk_temp = 0.9d0*exp((tOverTc-1.D0)/2.5e-3) + 
+     &         0.22d0*exp((tOverTc-1.d0)/2.2e-2) + 0.03
+      else if ((tOverTc .ge. 0.995) .and. (tOverTc .le. 1.05)) then
+        VisBulk_temp = -13.77d0*tOverTc**2.d0 + 
+     &         27.55d0*tOverTc - 13.45d0
+      else
+        VisBulk_temp = 0.9d0*exp(-(tOverTc-1.d0)/2.5e-2) + 
+     &         0.25d0*exp(-(tOverTc-1.d0)/0.13d0)+0.001
+      endif
+
+      ViscousZetasParametrization = VisBulk_temp
+
+      return
+      end
+
+!J.LIU=====end==============================================================
 
 
 C#######################################################
