@@ -325,6 +325,9 @@ def print_help_message():
     print(color.bold + "-model" + color.end + " initial condition model: "
           + color.purple + color.bold + " MCGlb[default]" + color.end
           + color.purple + ", MCKLN" + color.end)
+    print(color.bold + "-pre_eq" + color.end + " switch to include pre-equilibrium (only works for KLN): "
+          + color.purple + color.bold + "False[default]" + color.end
+          + color.purple + ", True" + color.end)
     print(color.bold + "-collision_system" + color.end
           + " type of collision system: "
           + color.purple + color.bold + " Pb+Pb[default]" + color.end
@@ -338,6 +341,7 @@ if __name__ == "__main__":
     cut_type = 'total_entropy'
     collsys = 'Pb+Pb'.split('+')
     output_path = path.abspath('./RESULTS/initial_conditions')
+    pre_eq = False
 
     while len(sys.argv) > 1:
         option = sys.argv[1]
