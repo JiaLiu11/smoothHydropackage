@@ -48,10 +48,10 @@ MCnucl::MCnucl(ParameterReader* paraRdr_in)
   PTmin  = paraRdr->getVal("PT_Min");
   dpt = paraRdr->getVal("d_PT");
   MaxPT=(int)((PTmax-PTmin)/dpt+0.1)+1;
-  if(PTinte<0)
+  if(PTinte>0)  //pT will be integrated
       PT_order = paraRdr->getVal("PT_order");   
   else
-      PT_order = 1; //does not apply when there is no PT integration
+      PT_order = 1; //pT integration order has no effects when the code runs in pT unintegrated mode
   
   //.... NN cross sections in mb
   double ecm = paraRdr->getVal("ecm");
