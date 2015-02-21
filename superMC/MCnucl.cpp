@@ -52,7 +52,7 @@ MCnucl::MCnucl(ParameterReader* paraRdr_in)
       PT_order = paraRdr->getVal("PT_order");   
   else
       PT_order = 1; //pT integration order has no effects when the code runs in pT unintegrated mode
-  
+
   //.... NN cross sections in mb
   double ecm = paraRdr->getVal("ecm");
   double sig = hadronxsec::totalXsection(200.0,0);
@@ -83,6 +83,9 @@ MCnucl::MCnucl(ParameterReader* paraRdr_in)
   sub_model = paraRdr->getVal("sub_model");
   shape_of_nucleons = paraRdr->getVal("shape_of_nucleons");
   
+  // generate PT_order=1 table for pt_order=2 mode
+  if(which_mc_model == 1 && sub_model==7 && PT_order == 2)
+    generatePTorder1 = true;
 
   gaussCal = NULL;
   entropy_gaussian_width = 0.0;
@@ -102,6 +105,7 @@ MCnucl::MCnucl(ParameterReader* paraRdr_in)
   }
 
   dndyTable=0;    // lookup table pointers not valid yet
+  dndyTableOrder1=0; //lookup table pointer for pt_order=1 table not valid yet
   dndydptTable=0;
   overSample=1;  // default: no oversampling
   binRapidity = paraRdr->getVal("ny");
@@ -157,6 +161,14 @@ MCnucl::~MCnucl()
       delete [] dndyTable[iy];
     }
     delete [] dndyTable;
+  }
+
+  if(dndyTableOrder1) {
+    for(int iy=0;iy<binRapidity;iy++) {
+      for(int j=0;j<tmax;j++) delete [] dndyTableOrder1[iy][j];
+      delete [] dndyTableOrder1[iy];
+    }
+    delete [] dndyTableOrder1;
   }
 
   if(dndydptTable) {
@@ -672,7 +684,7 @@ void MCnucl::calculate_rho_binary()
 
 // --- initializes dN/dyd2rt (or dEt/...) on 2d grid for rapidity slice iy
 //     and integrates it to obtain dN/dy (or dEt/dy) ---
-void MCnucl::setDensity(int iy, int ipt)
+void MCnucl::setDensity(int iy, int ipt, bool genPTorder1)
 {
   // which_mc_model==1 -> KLN-like
   if (which_mc_model==1 && ipt>=0 && (dndydptTable==0)) {
@@ -685,6 +697,13 @@ void MCnucl::setDensity(int iy, int ipt)
   if (which_mc_model==1 && ipt<0 && (dndyTable==0)) {
     cout <<
      "ERROR in MCnucl::setDensity() : pt-integrated yields require dndyTable !" << endl;
+    exit(0);
+  }
+
+  // which_mc_model==1 -> KLN-like and pT_order=2
+  if (which_mc_model==1 && ipt<0 && genPTorder1==true && (dndyTableOrder1==0)) {
+    cout <<
+     "ERROR in MCnucl::setDensity() : pt-integrated yields require dndyTableOrder1 !" << endl;
     exit(0);
   }
 
@@ -736,9 +755,18 @@ void MCnucl::setDensity(int iy, int ipt)
         int i = floor(di); int j = floor(dj);
         if (ipt<0) // without pt dependence
         {
-          table_result = sixPoint2dInterp(di-i, dj-j, // x and y value, in lattice unit (dndyTable_step -> 1)
-          dndyTable[iy][i][j], dndyTable[iy][i][j+1], dndyTable[iy][i][j+2], dndyTable[iy][i+1][j], dndyTable[iy][i+1][j+1], dndyTable[iy][i+2][j]);
-          rho->setDensity(iy,ir,jr,table_result);
+          if(genPTorder1)  //replace pt_order=2 energy table by pt_order=1 entropy table
+          {
+            table_result = sixPoint2dInterp(di-i, dj-j, // x and y value, in lattice unit (dndyTable_step -> 1)
+            dndyTableOrder1[iy][i][j], dndyTableOrder1[iy][i][j+1], dndyTableOrder1[iy][i][j+2], dndyTableOrder1[iy][i+1][j], dndyTableOrder1[iy][i+1][j+1], dndyTableOrder1[iy][i+2][j]);
+            rho->setDensity(iy,ir,jr,table_result);
+          }
+          else
+          {
+            table_result = sixPoint2dInterp(di-i, dj-j, // x and y value, in lattice unit (dndyTable_step -> 1)
+            dndyTable[iy][i][j], dndyTable[iy][i][j+1], dndyTable[iy][i][j+2], dndyTable[iy][i+1][j], dndyTable[iy][i+1][j+1], dndyTable[iy][i+2][j]);
+            rho->setDensity(iy,ir,jr,table_result);
+          }
         }
         else // with pt dependence
         {
@@ -972,6 +1000,15 @@ void MCnucl::makeTable()
     for(int j=0;j<tmax;j++) dndyTable[iy][j] = new double [tmax];
   }
 
+  if(generatePTorder1){
+    dndyTableOrder1 = new double** [binRapidity];
+    for(int iy=0;iy<binRapidity;iy++) {
+      dndyTableOrder1[iy] = new double* [tmax];
+      for(int j=0;j<tmax;j++) dndyTableOrder1[iy][j] = new double [tmax];
+    }    
+  }
+
+
 int progress_counter = 0, progress_percent = 0, last_update = 0;
 //===========================================================================
   for(int iy=0;iy<binRapidity;iy++) { // loop over rapidity bins
@@ -984,11 +1021,25 @@ int progress_counter = 0, progress_percent = 0, last_update = 0;
         if(i>0 && j>0) {  // store corresponding dN/dy in lookup table
           // small-x gluons via kt-factorization
           dndyTable[iy][i][j] = kln->getdNdy(y,ta1,ta2, -1, PT_order); 
+          // make pt_order=1 table 
+          if(generatePTorder1)
+            dndyTableOrder1[iy][i][j] = kln->getdNdy(y,ta1,ta2, -1, 1); 
+
           // add large-x partons via DHJ formula if required
-          if (val)
+          if (val){
             dndyTable[iy][i][j] += val->getdNdy(y,ta1,ta2);
+            if(generatePTorder1){
+              cout << "KLN with DHJ formula for pt_order =2 mode is not supported!"<<endl;
+              exit(-1);
+            }
+          }
           //cout << ta1 << ", " << ta2 << ", " << dndyTable[iy][i][j] << endl;
-        } else dndyTable[iy][i][j] = 0.0;
+        }
+        else{
+          dndyTable[iy][i][j] = 0.0;
+          if(generatePTorder1)
+            dndyTableOrder1[iy][i][j] = 0.0;
+        }
       progress_counter++;
       progress_percent = (progress_counter*100) / (binRapidity*tmax*tmax);
       if(((progress_percent%10) == 0) && (progress_percent != last_update))
@@ -1004,6 +1055,8 @@ int progress_counter = 0, progress_percent = 0, last_update = 0;
   cout << "MCnucl::makeTable(): done" << endl << endl;
 
   dumpdNdyTable4Col("data/dNdyTable.dat", dndyTable, 0);
+  if(generatePTorder1>0)
+    dumpdNdyTable4Col("data/dNdyTable_PTorder_1.dat", dndyTableOrder1, 0);
 }
 
 

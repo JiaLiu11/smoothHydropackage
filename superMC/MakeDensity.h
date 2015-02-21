@@ -37,6 +37,8 @@ protected:
   double Alpha;
   double finalFactor;
   double PTinte, PTmax, PTmin, dpt, MixedMode;
+  bool generatePTorder1;
+  int outputPT_order1;
   EOS eos;
   int Operation;
 

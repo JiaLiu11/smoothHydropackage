@@ -93,6 +93,12 @@ MakeDensity::MakeDensity(ParameterReader *paraRdr_in)
   if (which_mc_model==1) // MC-KLN
   {
     int mode = paraRdr->getVal("sub_model");
+    // pt_order =2 KLN model needs pt_order=1 table for total entropy calculation and rotation angle calculation
+    double pt_order = paraRdr->getVal("PT_order");
+    if(mode==7 && pt_order == 2)
+      generatePTorder1 = true; 
+    outputPT_order1 = paraRdr->getVal("outputPT_order1");
+
     if (mode >= rcBK) wf = new rcBKfunc(mode); // stupid coding style
     else wf = new KLNfunc();
 
@@ -416,6 +422,9 @@ void MakeDensity::generate_profile_ebe(int nevent)
   char file1_block[] = "data/sd_event_%d_block.dat";
   char file1_5col[] = "data/sd_event_%d_5col.dat";
   char file1_ptCol[] = "data/sd_event_%d_ptCol.dat";
+  // output pt_order=1 profile
+  char file1_4col_order1[] = "data/sd_event_%d_4col_ptOrder1.dat";
+  char file1_block_order1[] = "data/sd_event_%d_block_ptOrder1.dat";
   double *** dens1  = new double** [binRapidity];
   for(int iy=0;iy<binRapidity;iy++) {
     dens1[iy] =  new double* [Maxx]();
@@ -424,6 +433,16 @@ void MakeDensity::generate_profile_ebe(int nevent)
         for (int j=0;j<Maxy;j++) dens1[iy][i][j]=0;
     }
   }
+  
+  double *** dens1_order1  = new double** [binRapidity];
+  for(int iy=0;iy<binRapidity;iy++) {
+    dens1_order1[iy] =  new double* [Maxx]();
+    for(int i=0;i<Maxx;i++) {
+        dens1_order1[iy][i] = new double[Maxy]();
+        for (int j=0;j<Maxy;j++) dens1_order1[iy][i][j]=0;
+    }
+  }
+
 
   double **** dens1pt  = new double*** [binRapidity];
     for(int iy=0;iy<binRapidity;iy++) {
@@ -514,7 +533,10 @@ void MakeDensity::generate_profile_ebe(int nevent)
     if(PTinte>0)
     {
       for(int iy=0;iy<binRapidity;iy++) {
-        mc->setDensity(iy, -1);
+        if(generatePTorder1)
+          mc->setDensity(iy, -1, true); //use entropy table when run in KLN pt_order=2 mode
+        else
+          mc->setDensity(iy, -1, false); 
         // cut total entropy
         if(iy == 0 && cutdSdy == 1)
         {
@@ -525,6 +547,30 @@ void MakeDensity::generate_profile_ebe(int nevent)
               break;
            }
         }
+        // output entropy density or revert to total energy table
+        if(generatePTorder1 && outputPT_order1) // reset to energy table when run in KLN pt_order=2 mode
+        {
+          if (use_sd)
+          {
+            setSd(dens1_order1, iy); // includes factor multiplication
+            if (use_4col)
+              {
+                sprintf(buffer,file1_4col_order1,event);
+                dumpDensity4Col(buffer, dens1_order1, iy);
+              }
+            if (use_block)
+              {
+                sprintf(buffer,file1_block_order1,event);
+                dumpDensityBlock(buffer, dens1_order1, iy);
+              }
+          }
+          // if (use_ed)
+          //   cout << "MakeDensity: cannot output thermal energy density when run in PT_order=2 mode!" << endl;
+        }
+        //revert to total energy table
+        if(generatePTorder1)
+        mc->setDensity(iy, -1, false);   
+
         // output entropy profile
         if (use_sd)
         {
@@ -610,6 +656,14 @@ void MakeDensity::generate_profile_ebe(int nevent)
   }
   delete [] dens1;
 
+  // clean up
+  for(int iy=0;iy<binRapidity;iy++) {
+    for(int i=0;i<Maxx;i++) delete [] dens1_order1[iy][i];
+    delete [] dens1_order1[iy];
+  }
+  delete [] dens1_order1;
+
+
   for(int iy=0;iy<binRapidity;iy++) {
     for(int i=0;i<Maxx;i++) delete [] dens2[iy][i];
     delete [] dens2[iy];
@@ -675,7 +729,22 @@ void MakeDensity::generate_profile_average(int nevent)
       }
     }
   }
-  
+  // entropy profile if run in KLN pt_order=2 mode
+  char file1_4col_order1[] = "data/sdAvg_order_%d_4col_ptOrder1.dat";
+  char file1_block_order1[] = "data/sdAvg_order_%d_block_ptOrder1.dat";
+  double **** dens1_order1  = new double*** [number_of_orders];
+  for(int iorder=0; iorder<number_of_orders; iorder++) // iorder starts from 0
+  {
+    dens1_order1[iorder] = new double** [binRapidity];
+    for(int iy=0;iy<binRapidity;iy++) {
+      dens1_order1[iorder][iy] =  new double* [Maxx]();
+      for(int i=0;i<Maxx;i++) {
+          dens1_order1[iorder][iy][i] = new double[Maxy]();
+          for (int j=0;j<Maxy;j++) dens1_order1[iorder][iy][i][j]=0;
+      }
+    }
+  }
+ 
   // energy profile:
   char file2_4col[] = "data/edAvg_order_%d_4col.dat";
   char file2_block[] = "data/edAvg_order_%d_block.dat";
@@ -792,6 +861,14 @@ void MakeDensity::generate_profile_average(int nevent)
     }
   }
 
+  double *** dens_tmp_order1  = new double** [binRapidity];
+  for(int iy=0;iy<binRapidity;iy++) {
+    dens_tmp_order1[iy] =  new double* [Maxx]();
+    for(int i=0;i<Maxx;i++) {
+        dens_tmp_order1[iy][i] = new double[Maxy]();
+        for (int j=0;j<Maxy;j++) dens_tmp_order1[iy][i][j]=0;
+    }
+  }
 
   char file_TATB_Sd_4col[] = "data/TATB_fromSd_order_%d_4col.dat";
   char file_TATB_Sd_block[] = "data/TATB_fromSd_order_%d_block.dat";
@@ -1113,7 +1190,10 @@ void MakeDensity::generate_profile_average(int nevent)
       {
         for(int iy=0;iy<binRapidity;iy++)
         {
-          mc->setDensity(iy, -1);
+          if(generatePTorder1)  //if run in KLN pt_order=2 mode
+            mc->setDensity(iy, -1, true);
+          else
+            mc->setDensity(iy, -1);
           // cut total entropy density
           if(iy == 0 && cutdSdy == 1)
           {
@@ -1124,10 +1204,12 @@ void MakeDensity::generate_profile_average(int nevent)
                 break;
              }
           }
+
           // average entropy profile
           if (use_sd)
           {
-              if (generate_RP_profile == 1)
+              // using entropy density profile
+              if (generate_RP_profile == 1) 
               {
                   mc->recenterGrid(iy, order); // re-center grid according to gluon density
                   mc->getTA2();
@@ -1169,9 +1251,26 @@ void MakeDensity::generate_profile_average(int nevent)
                       }
                   }
               }
+              // rotate grid based on entropy density instead of total energy density
               mc->rotateGrid(iy, order); // rotate grid according to gluon density <-> according to entropy density. Note that different rapidity slices are rotated separately, and this does not quite make sense.
               mc->getTA2();
-              mc->setDensity(iy, -1); // now it's after rotation
+              // additional steps if output rotated entropy profile
+              if(generatePTorder1)
+              {
+                if(outputPT_order1==1)
+                {
+                  mc->setDensity(iy, -1, true); // now it's after rotation for entropy profile
+                  setSd(dens_tmp_order1, iy); // includes factor multiplication
+                  // averaging --- entropy density:
+                  for(int i=0;i<Maxx;i++)
+                  for(int j=0;j<Maxy;j++)
+                  {
+                      dens1_order1[iorder][iy][i][j] = (dens1_order1[iorder][iy][i][j]*(event-1) + dens_tmp_order1[iy][i][j])/(double)(event); // event = number of succeeded events
+                  }            
+                }
+                // now it's after rotation for total energy profile if running in KLN pt_order=2 mode
+                mc->setDensity(iy, -1, false); 
+              } 
               setSd(dens_tmp, iy); // includes factor multiplication
               // averaging --- entropy density:
               for(int i=0;i<Maxx;i++)
@@ -1397,11 +1496,21 @@ void MakeDensity::generate_profile_average(int nevent)
             {
               sprintf(buffer, file1_4col, order);
               dumpDensity4Col(buffer, dens1[iorder], iy);
+              if(generatePTorder1 && outputPT_order1)
+              {
+                sprintf(buffer, file1_4col_order1, order);
+                dumpDensity4Col(buffer, dens1_order1[iorder], iy);                
+              }
             }
             if (use_block)
             {
               sprintf(buffer, file1_block, order);
               dumpDensityBlock(buffer, dens1[iorder], iy);
+              if(generatePTorder1 && outputPT_order1)
+              {
+                sprintf(buffer, file1_block_order1, order);
+                dumpDensityBlock(buffer, dens1_order1[iorder], iy);
+              }
             }
             if (generate_RP_profile == 1)
             {
@@ -1695,6 +1804,12 @@ void MakeDensity::generate_profile_average(int nevent)
     delete [] dens_tmp[iy];
   }
   delete [] dens_tmp;
+
+  for(int iy=0;iy<binRapidity;iy++) {
+    for(int i=0;i<Maxx;i++) delete [] dens_tmp_order1[iy][i];
+    delete [] dens_tmp_order1[iy];
+  }
+  delete [] dens_tmp_order1;
 
   if(PTinte < 0)   // pT unintegrated profiles
   {
