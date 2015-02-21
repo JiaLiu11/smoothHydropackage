@@ -36,6 +36,7 @@ protected:
     GlueDensity *rho;
     int tmax, tmaxPt;
     double dT;
+    double ***dndyTableOrder1;
     double ***dndyTable;
     double ****dndydptTable;
     double dndy;
@@ -44,6 +45,7 @@ protected:
     double Xmin, Ymin, Xmax, Ymax;
     double PTinte, PTmax, PTmin, dpt, MaxPT;
     int PT_order;
+    bool generatePTorder1;
     double dx,dy;
     double siginNN, siginNN200;
     double rapidity;
@@ -110,7 +112,7 @@ public:
     void setRapidity(double y) {rapidity=y;}
     void generateNucleus(double b, OverLap* proj, OverLap* targ);
     void deleteNucleus();
-    void setDensity(int iy, int ipt); // ipt<0: no dN/dydpt table used
+    void setDensity(int iy, int ipt, bool genPTorder1=false); // ipt<0: no dN/dydpt table used
     void getTA2();
     void calculate_rho_binary();    // calculate binary collision density in the transverse plane
     int  getBinaryCollision();
