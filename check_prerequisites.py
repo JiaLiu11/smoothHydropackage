@@ -50,6 +50,52 @@ def check_module(module_name):
         print_warning("python %s module *NOT* installed." % module_name)
         return False
 
+def check_executables():
+    """
+        Check if all the executables are present, and compile them if not all of
+        them are. Return True if all the executables can be successfully
+        generated.
+    """
+    ebeNodeFolder = "smoothHydropackage"
+    executables = (
+        path.join("fs", "lm.e"),
+        path.join("superMC", "superMC.e"),
+        path.join("VISHNew", "VISHNew.e"),
+        path.join("iS", "iS.e"),
+        path.join("iS", "resonance.e"),
+        path.join("iS", "iInteSp.e"),
+        path.join("iSS", "iSS.e"),
+        path.join("urqmd", "urqmd.e"),
+    )
+
+    # check for existence of all executables
+    existenceFlag = True
+    print("Checking existence of executables.")
+    for exe in executables:
+        if not path.exists(path.join(ebeNodeFolder, exe)):
+            print("Executable %s not found." % exe)
+            existenceFlag = False
+            break
+        else:
+            print("Executable %s found." % exe)
+
+    # compile if necessary and check again
+    if not existenceFlag:
+        print("Start building executables...")
+        call("./compile_all.sh &> CompileRecord.txt", shell=True, cwd="smoothHydropackage/crank")
+        unlink(path.join("crank", "CompileRecord.txt"))
+
+        # check for existence of all executables again
+        existenceFlag = True
+        print("Checking again existence of executables.")
+        for exe in executables:
+            if not path.exists(path.join(ebeNodeFolder, exe)):
+                print("Executable %s still not found." % exe)
+                existenceFlag = False
+                return False
+
+    print("All executables found.")
+    return True
 
 def check_environment():
     """
@@ -193,3 +239,4 @@ def greetings(selection):
 if __name__ == '__main__':
     greetings(2)
     check_environment()
+    check_executables()
