@@ -100,12 +100,11 @@ smoothHydropackageFolder = "smoothHydropackage"
 crankFolderName = "crank"
 crankFolder = path.join(smoothHydropackageFolder, crankFolderName)
 utilitiesFolderName = "utilities"
-utilitiesFolder = path.join(smoothHydropackageFolder, utilitiesFolderName)
+utilitiesFolder = path.join(utilitiesFolderName)
 
-# backup run script: copy parameter file into the utilities folder
+#  parameter file into the utilities folder and backup it
 copy("runHydro_shell.py", utilitiesFolder)
-# backup parameter files to the result folder
-copy(path.join(utilitiesFolder, "runHydro_shell.py"), resultsFolder)
+copy("runHydro_shell.py", resultsFolder)
 
 # duplicate smoothHydroPackage folder to working directory, write .pbs file
 for i in range(1, numberOfJobs+1):
