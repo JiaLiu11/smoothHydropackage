@@ -50,7 +50,7 @@ def updateParameters(params_oneline):
     # update dictionary
     runHydroParameters['tau0']= taus
     runHydroParameters['vis'] = vis
-    runHydroParameters['Tdec']= tsw
+    runHydroParameters['Tdec']= tsw*0.001 # MeV --> GeV
 
 
 def formAssignmentStringFromDict(aDict):
