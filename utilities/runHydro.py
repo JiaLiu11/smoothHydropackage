@@ -18,6 +18,7 @@ dn_deta_dict = {'5500.0': 1974.234,
                 '200.0': 691,
                 '62.4': 472, }
 norm_factor_guess = 4.42195 # kln has flow
+rootDir = path.abspath('../')
 
 class color:
     """
@@ -52,7 +53,7 @@ def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
             % (ecm, model, chosen_centrality, cut_type, collsys, pre_eq))
     print "Generating event-averaged initial conditions..."
     print(cmd + args)
-    p = subprocess.Popen(cmd + args, shell=True, cwd='./')
+    p = subprocess.Popen(cmd + args, shell=True, cwd=rootDir)
     p.wait()
     return
 
@@ -60,14 +61,14 @@ def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0):
     """
         Perform pre-equilibrium evolution with averaged initial conditions
     """
-    fs_path = './fs'
+    fs_path = path.join(rootDir, 'fs')
     fs_data_path = path.join(fs_path, 'data')
     fs_init_path = path.join(fs_data_path, 'events')
     fs_result_path = path.join(fs_data_path, 'result', 'event_1', '%g'%tau0)
     cleanUpFolder(fs_result_path)
 
     # prepare initial file
-    shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+    shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
                     path.join(fs_init_path, 'sd_event_1_block.dat'))
     # fs
     cmd = './lm.e'
@@ -85,7 +86,7 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     """
         Perform pure hydro simulations with averaged initial conditions
     """
-    initial_path = 'RESULTS/initial_conditions'
+    initial_path = path.join(rootDir, 'RESULTS/initial_conditions')
     # clean hydro initial folder
     hydro_initial_path = path.join(hydro_path, 'Initial')
     cleanUpFolder(hydro_initial_path)
@@ -95,7 +96,7 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
         for aFile in glob(path.join('./fs/data/result/event_1/%g'%tau0, '*')):
             shutil.move(aFile, hydro_initial_path)
     else:
-        shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+        shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
                     path.join(hydro_path, 'Initial', 'InitialSd.dat'))
 
     # hydro
@@ -117,9 +118,9 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     p.wait()
 
 def split_iSS_events(number_of_split, 
-                    temp_folder = "./temp_nodes", 
+                    temp_folder = path.join(rootDir, "temp_nodes"), 
                     subfolder_pattern = "node_%d",
-                    output_folder = "./temp_output",
+                    output_folder = path.join(rootDir, "temp_output"),
                     input_file = "OSCAR.DAT"):
     """
         Sequentially implement the OSCAR events divide and conquer:
@@ -129,9 +130,9 @@ def split_iSS_events(number_of_split,
         4. run osc2u and urqmd in parallel;
         5. collect data and clean up temporary folders.
     """
-    iSS_path = "./iSS"
-    osc2u_path = "./osc2u"
-    urqmd_path = "./urqmd"
+    iSS_path = path.join(rootDir, "iSS")
+    osc2u_path = path.join(rootDir, "osc2u")
+    urqmd_path = path.join(rootDir, "urqmd")
 
     # split OSCAR file
     split_script = path.join(iSS_path, "split_events.py")
@@ -161,7 +162,7 @@ def split_iSS_events(number_of_split,
         source_file_pattern = input_file.split('.')[0] + "_%d.dat" # according to the file format in split_events.py
         source_file = path.join(iSS_path, source_file_pattern%node_i)
         # copy osc2u and urqmd running script
-        shutil.copy('./run_osc2u_urqmd.sh', folder_i)
+        shutil.copy(path.join('./run_osc2u_urqmd.sh', folder_i))
         # check file exist
         if not path.isfile(source_file):
             print "Input file: %s does not exist! "%source_file
@@ -241,10 +242,10 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         Perform hydro + UrQMD hybrid simulations with averaged initial
         conditions
     """
-    initial_path = 'RESULTS/initial_conditions'
+    initial_path = path.join(rootDir, 'RESULTS/initial_conditions')
     result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s'
                      % (model, ecm, vis, cen_string, tdec, tau0, eos_name))
-    results_folder_path = path.join(path.abspath('./RESULTS'), result_folder)
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
     if path.exists(results_folder_path):
         shutil.rmtree(results_folder_path)
     makedirs(results_folder_path)
@@ -254,10 +255,10 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     # run pre-equilibrium
     if(pre_eq == True):
         run_pre_eq(initial_path, cen_string, run_record, err_record, tau0)
-        for aFile in glob(path.join('./fs/data/result/event_1/%g'%tau0, '*')):
+        for aFile in glob(path.join(rootDir, 'fs/data/result/event_1/%g'%tau0, '*')):
             shutil.move(aFile, hydro_initial_path)
     else:
-        shutil.copyfile('./%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+        shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
                     path.join(hydro_path, 'Initial', 'InitialSd.dat'))
 
     # hydro
@@ -317,7 +318,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
                                         output_folder = results_folder_path)
     else:
         #osc2u
-        o2u_path = path.abspath('./osc2u')
+        o2u_path = path.join(rootDir,'osc2u')
         input_file = 'OSCAR.DAT'
         output_file = 'fort.14'
         if path.isfile(path.join(o2u_path, input_file)):
@@ -333,7 +334,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         remove(path.join(o2u_path, input_file))  # clean up
 
         #UrQMD
-        UrQMD_path = path.abspath('./urqmd')
+        UrQMD_path = path.abspath(rootDir,'urqmd')
         input_file = 'OSCAR.input'
         output_file = 'particle_list.dat'
         if path.isfile(path.join(UrQMD_path, input_file)):
@@ -370,10 +371,10 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq):
     """
     run_record_file_name = 'run_record_fitNorm.dat'
     err_record_file_name = 'err_record_fitNorm.dat'
-    run_record = open(path.join('.', run_record_file_name), 'a')
-    err_record = open(path.join('.', err_record_file_name), 'a')
-    hydro_path = path.abspath('./VISHNew')
-    iS_path = path.abspath('./iS')
+    run_record = open(path.join(rootDir, run_record_file_name), 'a')
+    err_record = open(path.join(rootDir, err_record_file_name), 'a')
+    hydro_path = path.join(rootDir, 'VISHNew')
+    iS_path = path.join(rootDir, 'iS')
     norm_factor = norm_factor_guess
     tol = 1e-3
     target_file = 'Charged_eta_integrated_vndata.dat'
@@ -394,10 +395,10 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq):
             norm_factor = norm_factor * dNdeta_goal / dN_deta
         else:
             break
-    shutil.move(path.join('.', run_record_file_name),
-                path.abspath('./RESULTS'))
-    shutil.move(path.join('.', err_record_file_name),
-                path.abspath('./RESULTS'))
+    shutil.move(path.join(rootDir, run_record_file_name),
+                path.join(rootDir, 'RESULTS'))
+    shutil.move(path.join(rootDir, err_record_file_name),
+                path.join(rootDir, 'RESULTS'))
     return norm_factor
 
 
@@ -408,10 +409,10 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
     """
     run_record_file_name = 'run_record_hydrowithiS.dat'
     err_record_file_name = 'err_record_hydrowithiS.dat'
-    run_record = open(path.join('.', run_record_file_name), 'a')
-    err_record = open(path.join('.', err_record_file_name), 'a')
-    hydro_path = path.abspath('./VISHNew')
-    iS_path = path.abspath('./iS')
+    run_record = open(path.join(rootDir, run_record_file_name), 'a')
+    err_record = open(path.join(rootDir, err_record_file_name), 'a')
+    hydro_path = path.join(rootDir, 'VISHNew')
+    iS_path = path.join(rootDir, 'iS')
 
     if chosen_centrality == 'All':
         for icen in range(len(cen_list)):
@@ -420,7 +421,7 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
                                   run_record, err_record,
                                   norm_factor, vis, edec, tau0, pre_eq)
                 shutil.move(path.join(iS_path, 'results'),
-                            path.join('RESULTS', '%s%.0fVis%gC%sTdec%gTau%g_%s'
+                            path.join(rootDir,'RESULTS', '%s%.0fVis%gC%sTdec%gTau%g_%s'
                                       % (model, ecm, vis, cen_list[icen],
                                          tdec, tau0, eos_name)))
             else:
@@ -428,7 +429,7 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
                               run_record, err_record,
                               norm_factor, vis, edec, tau0, pre_eq)
                 shutil.move(path.join(hydro_path, 'results'),
-                            path.join('RESULTS',
+                            path.join(rootDir, 'RESULTS',
                                       '%s%.0fVis%gC%sTdec%gTau%g_%s_hydroOnly'
                                       % (model, ecm, vis, cen_list[icen],
                                          tdec, tau0, eos_name)))
@@ -438,7 +439,7 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
                               run_record, err_record,
                               norm_factor, vis, edec, tau0, pre_eq)
             shutil.move(path.join(iS_path, 'results'),
-                        path.join('RESULTS', '%s%.0fVis%gC%sTdec%gTau%g_%s'
+                        path.join(rootDir, 'RESULTS', '%s%.0fVis%gC%sTdec%gTau%g_%s'
                                   % (model, ecm, vis, chosen_centrality,
                                      tdec, tau0, eos_name)))
         else:
@@ -446,13 +447,15 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
                           run_record, err_record,
                           norm_factor, vis, edec, tau0, pre_eq)
             shutil.move(path.join(hydro_path, 'results'),
-                        path.join('RESULTS',
+                        path.join(rootDir, 'RESULTS',
                                   '%s%.0fVis%gC%sTdec%gTau%g_%s_hydroOnly'
                                   % (model, ecm, vis, chosen_centrality,
                                      tdec, tau0, eos_name)))
 
-    shutil.move(path.join('.', run_record_file_name), 'RESULTS')
-    shutil.move(path.join('.', err_record_file_name), 'RESULTS')
+    shutil.move(path.join(rootDir, run_record_file_name), 
+        path.join(rootDir, 'RESULTS'))
+    shutil.move(path.join(rootDir, err_record_file_name), 
+        path.join(rootDir, 'RESULTS'))
 
 
 def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
@@ -463,10 +466,10 @@ def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
     """
     run_record_file_name = 'run_record_hybrid.dat'
     err_record_file_name = 'err_record_hybrid.dat'
-    run_record = open(path.join('.', run_record_file_name), 'a')
-    err_record = open(path.join('.', err_record_file_name), 'a')
-    hydro_path = path.abspath('./VISHNew')
-    iSS_path = path.abspath('./iSS')
+    run_record = open(path.join(rootDir, run_record_file_name), 'a')
+    err_record = open(path.join(rootDir, err_record_file_name), 'a')
+    hydro_path = path.join(rootDir, 'VISHNew')
+    iSS_path = path.join(rootDir, 'iSS')
 
     if chosen_centrality == 'All':
         for icen in range(len(cen_list)):
@@ -482,8 +485,10 @@ def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
                                norm_factor, vis, tdec, edec, tau0, eos_name,
                                pre_eq, parallel_mode)
 
-    shutil.copy(path.join('.', run_record_file_name), 'RESULTS')
-    shutil.copy(path.join('.', err_record_file_name), 'RESULTS')
+    shutil.copy(path.join(rootDir, run_record_file_name), 
+        path.join(rootDir, 'RESULTS'))
+    shutil.copy(path.join(rootDir, err_record_file_name), 
+        path.join(rootDir, 'RESULTS'))
 
 def set_eos(eos_name, tdec):
     """
@@ -492,19 +497,19 @@ def set_eos(eos_name, tdec):
     :param tdec: the decoupling temperature (GeV)
     :return edec: the decoupling energy density (GeV/fm^3) corresponds to tdec
     """
-    superMC_eos_path = './superMC/s95p-PCE'
-    fs_eos_path = './fs/EOS'
-    hydro_eos_path = './VISHNew/EOS/EOS_tables'
-    iS_eos_path = './iS/EOS'
-    iSS_eos_path = './iSS/EOS'
+    superMC_eos_path = path.join(rootDir, 'superMC/s95p-PCE')
+    fs_eos_path = path.join(rootDir, 'fs/EOS')
+    hydro_eos_path = path.join(rootDir, 'VISHNew/EOS/EOS_tables')
+    iS_eos_path = path.join(rootDir, 'iS/EOS')
+    iSS_eos_path = path.join(rootDir, 'iSS/EOS')
     if eos_name == 's95p-v0-PCE165':
-        eos_files_path = './EOS/EOS_s95p/s95p_convertedtables/s95p-PCE165-v0'
+        eos_files_path = path.join(rootDir, 'EOS/EOS_s95p/s95p_convertedtables/s95p-PCE165-v0')
     elif eos_name == 's95p-v1-PCE150':
-        eos_files_path = './EOS/EOS_s95p/s95p_convertedtables/s95p-PCE-v1'
+        eos_files_path = path.join(rootDir, 'EOS/EOS_s95p/s95p_convertedtables/s95p-PCE-v1')
     elif eos_name == 's95p-v1':
-        eos_files_path = './EOS/EOS_s95p/s95p_convertedtables/s95p-v1'
+        eos_files_path = path.join(rootDir, 'EOS/EOS_s95p/s95p_convertedtables/s95p-v1')
     elif eos_name == 'SM-EOS-Q':
-        eos_files_path = './EOS/SMEOSQ'
+        eos_files_path = path.join(rootDir, 'EOS/SMEOSQ')
     else:
         raise ValueError('invalid EOS: %s' % eos_name)
 
@@ -546,7 +551,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     print('EOS : %s' % eos_name)
 
     # initial setup
-    result_folder_path = './RESULTS'
+    result_folder_path = path.join(rootDir, 'RESULTS')
     if not path.exists(result_folder_path):
         makedirs(result_folder_path)
 
@@ -575,16 +580,16 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
             initial_condition_name = '%s%.0f_sigmaNN_gauss_d0.9%s' % (modelsys, ecm, preEq_string)
         else:
             initial_condition_name = '%s%.0f_sigmaNN_gauss_d0.9' % (modelsys, ecm)            
-        if path.isfile('./initial_conditions/%s.zip' % initial_condition_name):
+        if path.isfile(path.join(rootDir, 'initial_conditions/%s.zip' % initial_condition_name)):
             p = subprocess.Popen('unzip -qo %s.zip' % initial_condition_name, 
                                  shell=True, stdout=subprocess.PIPE, 
-                                 cwd='./initial_conditions')
+                                 cwd=path.join(rootDir, 'initial_conditions'))
             p.wait()
             # move initial profiles
             move_cmd = "mv -f ./initial_conditions/%s/* %s/initial_conditions/"%(
                 initial_condition_name, result_folder_path)
             p = subprocess.Popen(move_cmd, shell=True, stdout=subprocess.PIPE,
-                cwd='./')
+                cwd=rootDir)
             p.wait()
         else:
             print("initial density profiles for %s%% centrality for %s %s " 
