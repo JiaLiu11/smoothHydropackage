@@ -60,3 +60,4 @@ results/
 obj/
 tests/
 fs/data/*
+*.e
