@@ -54,10 +54,10 @@ docs/_build/
 
 *.[oa]
 *.~
-*.dat
 .DS_Store
 results/
 obj/
 tests/
 fs/data/*
-*.e
+*.oe
+*.pyc
