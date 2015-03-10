@@ -3,10 +3,12 @@
 from subprocess import call
 from os import path,getcwd
 from sys import stdout
+import numpy as np
+from glob import glob
 
 runHydroParameters = {
     'ecm'              :  2760,      # collision energy (GeV): 7.7, 11.5, 19.6, 27, 39, 62.4, 200, 2760
-    'mode'             :  'hydro',   #the simulation type:  hydro[default], hybrid
+    'mode'             :  'hybrid',   #the simulation type:  hydro[default], hybrid
     'model'            :  'MCGlb',   #initial condition model:  MCGlb[default], MCKLN
     'vis'              :  0.08,      #the specific shear viscosity used in the hydro simulation eta/s = 0.08 [default]
     'Tdec'             :  0.155,      #the decoupling temperature (GeV) used in the hydro simulation Tdec = 0.12 GeV [default]
@@ -19,6 +21,36 @@ runHydroParameters = {
     'pre_eq'           :  False,      #whether to include initial pre-equilibrium
     'parallel_mode'    :  2,         #switch to run osc2u and urqmd in parallel mode by splitting iSS resampled events to parallel_mode pieces
 }
+
+def splitParameterTable(infile_name, number_of_nodes):
+    """
+        split parameter table
+    """
+    # locate the current node
+    rootDir = path.abspath("..") #assume this file is placed under utilities/
+    tableLocation = path.join(rootDir, "tables")
+    node_name = rootDir.split('/')[-1]  # get the name of current node
+    node_index = int(node_name.split('e')[-1]) # index of tau_s for current folder
+    # load original table
+    params_list_data = np.loadtxt(infile_name)
+    # subset data
+    total_lines = params_list_data.shape[0]
+    node_lines  = int(total_lines/number_of_nodes)
+    params_selected = params_list_data[(node_index-1)*node_lines:(node_index*node_lines),:]
+    outfile_name = path.join(rootDir, "params_list_node%d.dat"%node_index)
+    np.savetxt(outfile_name, params_selected, fmt='%g',delimiter='\t')
+    return params_selected
+
+def updateParameters(params_oneline):
+    """
+        update parameters runHydroParameters for working in parameter search mode. 
+        input: switching time, shear viscosity, switching temperature
+    """
+    taus, vis, tsw = params_oneline
+    # update dictionary
+    runHydroParameters['tau0']= taus
+    runHydroParameters['vis'] = vis
+    runHydroParameters['Tdec']= tsw
 
 
 def formAssignmentStringFromDict(aDict):
@@ -55,6 +87,25 @@ def runHydro_shell():
     print executableString
     run(executableString, cwd=path.abspath("./"))
 
+def runHydro_paramSearch():
+    """
+        Automatically detect the node name, extract the parameter combinations 
+        for current node, and run parameter search.
+    """
+    number_of_nodes = len(glob(path.join('../../', 'node?')))
+    params_currentNode = splitParameterTable('../tables/params_list.dat',
+                                             number_of_nodes)
+    for i in range(params_currentNode.shape[0]):
+        params_now = params_currentNode[i, :-1] # each line has four parameters: taus, eta/s, tdec, edec
+        updateParameters(params_now)
+        # form assignment string
+        assignments = formAssignmentStringFromDict(runHydroParameters)
+        # form executable string
+        executableString = './runHydro.py' + assignments
+        # execute!
+        run(executableString, cwd=path.abspath("./"))
+
 
 if __name__ == "__main__":
-    runHydro_shell()
+    runHydro_paramSearch()
+    #runHydro_shell()
