@@ -119,6 +119,7 @@ for i in range(1, numberOfJobs+1):
 #PBS -l mem=8GB
 #PBS -j oe
 #PBS -S /bin/bash
+module load python/2.7.1 # for osc oakley cluster
 cd %s
 (cd %s
     ulimit -n 1000
