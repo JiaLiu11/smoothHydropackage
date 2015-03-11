@@ -162,7 +162,7 @@ def split_iSS_events(number_of_split,
         source_file_pattern = input_file.split('.')[0] + "_%d.dat" # according to the file format in split_events.py
         source_file = path.join(iSS_path, source_file_pattern%node_i)
         # copy osc2u and urqmd running script
-        shutil.copy(path.join('./run_osc2u_urqmd.sh', folder_i))
+        shutil.copy('run_osc2u_urqmd.sh', folder_i)
         # check file exist
         if not path.isfile(source_file):
             print "Input file: %s does not exist! "%source_file
