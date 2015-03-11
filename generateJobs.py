@@ -100,10 +100,10 @@ smoothHydropackageFolder = "smoothHydropackage"
 crankFolderName = "crank"
 crankFolder = path.join(smoothHydropackageFolder, crankFolderName)
 utilitiesFolderName = "utilities"
-utilitiesFolder = path.join(utilitiesFolderName)
+utilitiesFolder = utilitiesFolderName
 
 #  parameter file into the utilities folder and backup it
-copy("runHydro_shell.py", utilitiesFolder)
+copy("runHydro_shell.py", path.join(smoothHydropackageFolder, utilitiesFolder))
 copy("runHydro_shell.py", resultsFolder)
 
 # duplicate smoothHydroPackage folder to working directory, write .pbs file
@@ -126,7 +126,7 @@ cd %s
     python runHydro_shell.py 1> RunRecord.txt 2> ErrorRecord.txt
     cp RunRecord.txt ErrorRecord.txt ../RESULTS/
 )
-mv ./RESULTS/* %s/node%d
+mv ../RESULTS/* %s/node%d
 """ % (i, walltime, targetWorkingFolder, utilitiesFolder, resultsFolder, i)
     )
     if compressResultsFolderAnswer == "yes":
