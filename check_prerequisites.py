@@ -82,8 +82,9 @@ def check_executables():
     # compile if necessary and check again
     if not existenceFlag:
         print("Start building executables...")
-        call("./compile_all.sh &> CompileRecord.txt", shell=True, cwd="smoothHydropackage/crank")
-        unlink(path.join("crank", "CompileRecord.txt"))
+        call("./compile_all.sh &> CompileRecord.txt", shell=True, 
+            cwd=path.join(ebeNodeFolder, "crank"))
+        unlink(path.join(ebeNodeFolder, "crank", "CompileRecord.txt"))
 
         # check for existence of all executables again
         existenceFlag = True
