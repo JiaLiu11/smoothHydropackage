@@ -407,7 +407,7 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq):
     hydro_path = path.join(rootDir, 'VISHNew')
     iS_path = path.join(rootDir, 'iS')
     norm_factor = norm_factor_guess
-    tol = 1e-3
+    tol = 6*1e-3 # approximately 10 when dNdeta_goal = 1600
     target_file = 'Charged_eta_integrated_vndata.dat'
     while 1:
         icen = 0
