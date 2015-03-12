@@ -17,7 +17,7 @@ dn_deta_dict = {'5500.0': 1974.234,
                 '2760.0': 1601,
                 '200.0': 691,
                 '62.4': 472, }
-norm_factor_guess = 10.0
+norm_factor_default = 10.0
 rootDir = path.abspath('../')
 
 class color:
@@ -68,7 +68,7 @@ def linearFitSfactor(tau_s, eta_s, t_sw, model="MCGlb", pre_eq=False):
             3.46467929,28.07882091,17.86500695])
     else:
         print "linearFitSfactor: cannot predict scaling factor for run mode: %s, pre-eq. = %s"%(model, pre_eq)
-        return 10.0 # default value
+        return norm_factor_default # default value
     # change unit: GeV --> MeV
     t_sw = t_sw*1000.0
     # combine to linear model
@@ -390,7 +390,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         remove(path.join(UrQMD_path, output_file))  # clean up
 
 
-def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq):
+def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0):
     """
     This function find the overall normalization factor for the hydrodynamic
     simulations at given collision energy
@@ -640,9 +640,9 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     if fit_flag:
         print "fitting the overall normalization factor ..."
         norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
-        norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq)
+        norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq, norm_factor_guess)
     else:
-        norm_factor = norm_factor_guess
+        norm_factor = norm_factor_default
     if mode == 'hydro':
         print "running pure hydro simulations for centrality bin(s): %s ..."%chosen_centrality
         run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
