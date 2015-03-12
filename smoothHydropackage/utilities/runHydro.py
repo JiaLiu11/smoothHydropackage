@@ -44,6 +44,37 @@ def cleanUpFolder(aDir):
             pass # very likely the the folder is already empty
     makedirs(aDir)
 
+def linearFitSfactor(tau_s, eta_s, t_sw, model="MCGlb", pre_eq=False):
+    """
+        Use the linear fit result to give an guess of the scaling factor for given
+        switching time, shear viscosity and switching temperature.
+        The linear fit has the form:
+        sfactor = A0 + A1*tau_s + A2*eta_s + A3*t_sw + A4*tau_s^2 + A5*tau_s_3 
+                   + A6*eta_s^2 + A7*tau_s*eta_s
+    """
+    model_str = model+"_%d"%pre_eq
+    # choose linear coefficients
+    if model_str == "MCGlb_0":
+        coeff_list = np.array([192.14190497,-284.36945039,-201.68632700,-0.04096829,176.83509284,
+            -39.69363878,-441.47816092,178.69094531])
+    elif model_str == "MCGlb_1":
+        coeff_list = np.array([36.02240022,-7.32523631,-138.53732379,-0.00868909,-3.84600983,
+            1.65251890,174.27023844,67.81849622])
+    elif model_str == "MCKLN_0":
+        coeff_list = np.array([334.40966764,-497.51934430,-697.52231119,-0.02866758,353.26967625,
+            -110.86168167,363.74141971,505.83890632])
+    elif model_str == "MCKLN_1":
+        coeff_list = np.array([14.16295555,3.90769983,-36.13522848,-0.00381599,-9.33504831,
+            3.46467929,28.07882091,17.86500695])
+    else:
+        print "linearFitSfactor: cannot predict scaling factor for run mode: %s, pre-eq. = %s"%(model, pre_eq)
+        return 10.0 # default value
+    # change unit: GeV --> MeV
+    t_sw = t_sw*1000.0
+    # combine to linear model
+    return (coeff_list[0] + coeff_list[1]*tau_s + coeff_list[2]*eta_s + coeff_list[3]*t_sw
+            + coeff_list[4]*tau_s**2.0 + coeff_list[5]*tau_s**3.0 
+            + coeff_list[6]*eta_s**2.0 + coeff_list[7]*tau_s*eta_s)
 
 
 def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
