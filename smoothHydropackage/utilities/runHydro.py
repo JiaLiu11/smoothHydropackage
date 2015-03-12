@@ -17,7 +17,7 @@ dn_deta_dict = {'5500.0': 1974.234,
                 '2760.0': 1601,
                 '200.0': 691,
                 '62.4': 472, }
-norm_factor_guess = 4.42195 # kln has flow
+norm_factor_guess = 10.0
 rootDir = path.abspath('../')
 
 class color:
@@ -639,9 +639,10 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     # start to run simulations
     if fit_flag:
         print "fitting the overall normalization factor ..."
+        norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
         norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq)
     else:
-        norm_factor = norm_factor_guess#float(input("Please input the normalization factor: "))
+        norm_factor = norm_factor_guess
     if mode == 'hydro':
         print "running pure hydro simulations for centrality bin(s): %s ..."%chosen_centrality
         run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
