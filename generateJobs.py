@@ -126,7 +126,7 @@ cd %s
     python runHydro_shell.py 1> RunRecord.txt 2> ErrorRecord.txt
     cp RunRecord.txt ErrorRecord.txt ../RESULTS/
 )
-mv ../RESULTS/* %s/node%d
+mv ./RESULTS/* %s/node%d
 """ % (i, walltime, targetWorkingFolder, utilitiesFolder, resultsFolder, i)
     )
     if compressResultsFolderAnswer == "yes":
