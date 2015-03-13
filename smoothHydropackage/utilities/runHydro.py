@@ -426,6 +426,11 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0):
             norm_factor = norm_factor * dNdeta_goal / dN_deta
         else:
             break
+
+    if(path.isfile(path.join(rootDir, 'RESULTS', run_record_file_name))):
+        remove(path.join(rootDir, 'RESULTS', run_record_file_name))
+    if(path.isfile(path.join(rootDir, 'RESULTS', err_record_file_name))):
+        remove(path.join(rootDir, 'RESULTS', err_record_file_name))    
     shutil.move(path.join(rootDir, run_record_file_name),
                 path.join(rootDir, 'RESULTS'))
     shutil.move(path.join(rootDir, err_record_file_name),
@@ -482,7 +487,11 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
                                   '%s%.0fVis%gC%sTdec%gTau%g_%s_hydroOnly'
                                   % (model, ecm, vis, chosen_centrality,
                                      tdec, tau0, eos_name)))
-
+            
+    if(path.isfile(path.join(rootDir, 'RESULTS', run_record_file_name))):
+        remove(path.join(rootDir, 'RESULTS', run_record_file_name))
+    if(path.isfile(path.join(rootDir, 'RESULTS', err_record_file_name))):
+        remove(path.join(rootDir, 'RESULTS', err_record_file_name))  
     shutil.move(path.join(rootDir, run_record_file_name), 
         path.join(rootDir, 'RESULTS'))
     shutil.move(path.join(rootDir, err_record_file_name), 
