@@ -17,7 +17,6 @@ dn_deta_dict = {'5500.0': 1974.234,
                 '2760.0': 1601,
                 '200.0': 691,
                 '62.4': 472, }
-norm_factor_default = 10.0
 rootDir = path.abspath('../')
 
 class color:
@@ -796,6 +795,7 @@ if __name__ == "__main__":
     except NameError:
         print_help_message()
         sys.exit(1)
+    norm_factor_default = 56.76 if model == 'MCGlb' else 9.92
 
     # get dN/deta from the collision energy
     if 'Cu' in collsys:
