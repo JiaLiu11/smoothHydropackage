@@ -34,9 +34,12 @@ def splitParameterTable(infile_name, number_of_nodes):
     # load original table
     params_list_data = np.loadtxt(infile_name)
     # subset data
-    total_lines = params_list_data.shape[0]
-    node_lines  = int(total_lines/number_of_nodes)
-    params_selected = params_list_data[(node_index-1)*node_lines:(node_index*node_lines),:]
+    if params_list_data.ndim==1: # only one line of parameters
+        params_selected = params_list_data 
+    else:
+        total_lines = params_list_data.shape[0]
+        node_lines  = int(total_lines/number_of_nodes)
+        params_selected = params_list_data[(node_index-1)*node_lines:(node_index*node_lines),:]
     outfile_name = path.join(rootDir, "params_list_node%d.dat"%node_index)
     np.savetxt(outfile_name, params_selected, fmt='%g',delimiter='\t')
     return params_selected
@@ -95,8 +98,8 @@ def runHydro_paramSearch():
     number_of_nodes = len(glob(path.join('../../', 'node?')))
     params_currentNode = splitParameterTable('../tables/params_list.dat',
                                              number_of_nodes)
-    for i in range(params_currentNode.shape[0]):
-        params_now = params_currentNode[i, :-1] # each line has four parameters: taus, eta/s, tdec, edec
+    if params_currentNode.ndim==1: # only one line
+        params_now = params_currentNode[:-1]
         updateParameters(params_now)
         # form assignment string
         assignments = formAssignmentStringFromDict(runHydroParameters)
@@ -104,6 +107,16 @@ def runHydro_paramSearch():
         executableString = './runHydro.py' + assignments
         # execute!
         run(executableString, cwd=path.abspath("./"))
+    else:        
+        for i in range(params_currentNode.shape[0]):
+            params_now = params_currentNode[i, :-1] # each line has four parameters: taus, eta/s, tdec, edec
+            updateParameters(params_now)
+            # form assignment string
+            assignments = formAssignmentStringFromDict(runHydroParameters)
+            # form executable string
+            executableString = './runHydro.py' + assignments
+            # execute!
+            run(executableString, cwd=path.abspath("./"))
 
 
 if __name__ == "__main__":
