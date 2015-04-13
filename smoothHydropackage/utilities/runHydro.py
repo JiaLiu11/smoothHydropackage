@@ -11,6 +11,17 @@ import sys
 # centrality list
 cen_list = ['0-5', '5-10', '10-20', '20-30', '30-40',
             '40-50', '50-60', '60-70', '70-80']
+dn_deta_ECM2760_dict = {
+  '0-5'         :        1601, 
+  '5-10'        :        1294,
+  '10-20'       :        966,
+  '20-30'       :        649,
+  '30-40'       :        426,
+  '40-50'       :        261,
+  '50-60'       :        149,
+  '60-70'       :        76,
+  '70-80'       :        35,
+}
 
 # charged multiplicity dN/deta for 0-5% centrality
 dn_deta_dict = {'5500.0': 1974.234,
@@ -964,6 +975,12 @@ if __name__ == "__main__":
         dN_deta = 312.5 * np.log10(ecm) - 64.8
     elif ecm_string in dn_deta_dict.keys():
         dN_deta = dn_deta_dict[ecm_string]
+        if mode=='hybrid_search':
+            if ecm_string=='2760.0':
+                dN_deta = dn_deta_ECM2760_dict[chosen_centrality]
+            else:
+                print 'Mode hybrid_search is currently not supported for %s GeV'%ecm_string
+                sys.exit(0)
     else:
         print sys.argv[0], ': invalid collision energy', ecm
         sys.exit(1)
