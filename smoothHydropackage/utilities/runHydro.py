@@ -87,7 +87,7 @@ def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
     p.wait()
     return
 
-def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0):
+def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0, flow_order=2):
     """
         Perform pre-equilibrium evolution with averaged initial conditions
     """
@@ -98,8 +98,12 @@ def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0):
     cleanUpFolder(fs_result_path)
 
     # prepare initial file
-    shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
-                    path.join(fs_init_path, 'sd_event_1_block.dat'))
+    if not flow_order==2:
+        shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path,flow_order, cen_string),
+                        path.join(fs_init_path, 'sd_event_1_block.dat'))
+    else:
+        shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+                        path.join(fs_init_path, 'sd_event_1_block.dat'))
     # fs
     cmd = './lm.e'
     args= (' event_mode=1 dEdyd2rdphip_dist=0 sfactor=1.0'
@@ -267,14 +271,18 @@ def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
 def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
                            run_record, err_record,
                            norm_factor, vis, tdec, edec, tau0, eos_name,
-                           pre_eq, parallel_mode):
+                           pre_eq, parallel_mode, flow_order=2):
     """
         Perform hydro + UrQMD hybrid simulations with averaged initial
         conditions
     """
     initial_path = path.join(rootDir, 'RESULTS/initial_conditions')
-    result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s'
-                     % (model, ecm, vis, cen_string, tdec, tau0, eos_name))
+    if not flow_order==2:
+        result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s_v%d'
+                         % (model, ecm, vis, cen_string, tdec, tau0, eos_name, flow_order))
+    else:
+        result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s'
+                         % (model, ecm, vis, cen_string, tdec, tau0, eos_name))
     results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
     if path.exists(results_folder_path):
         shutil.rmtree(results_folder_path)
@@ -288,8 +296,12 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         for aFile in glob(path.join(rootDir, 'fs/data/result/event_1/%g'%tau0, '*')):
             shutil.move(aFile, hydro_initial_path)
     else:
-        shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+        if not flow_order==2:
+            shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path, flow_order, cen_string),
                     path.join(hydro_path, 'Initial', 'InitialSd.dat'))
+        else:
+            shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+                        path.join(hydro_path, 'Initial', 'InitialSd.dat'))
 
     # hydro
     hydro_folder_path = path.join(hydro_path, 'results')
@@ -389,7 +401,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         remove(path.join(UrQMD_path, output_file))  # clean up
 
 
-def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0):
+def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_string="0-5"):
     """
     This function find the overall normalization factor for the hydrodynamic
     simulations at given collision energy
@@ -409,7 +421,13 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0):
     tol = 6*1e-3 # approximately 10 when dNdeta_goal = 1600
     target_file = 'Charged_eta_integrated_vndata.dat'
     while 1:
-        icen = 0
+        try:
+            icen = cen_list.index(cen_string)
+            print "fit_hydro: fitting on centrality %s%%"%cen_string
+        except:
+            print "No such centrality: %s%%"%cen_string
+            sys.exit(0)
+
         run_hydro_with_iS(cen_list[icen], hydro_path, iS_path, 
                           run_record, err_record,
                           norm_factor, vis, edec, tau0, pre_eq)
@@ -529,6 +547,44 @@ def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
     shutil.copy(path.join(rootDir, err_record_file_name), 
         path.join(rootDir, 'RESULTS'))
 
+def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
+               tau0, eos_name, chosen_centrality, pre_eq,
+               parallel_mode):
+    """
+    Shell for parameter search mode simulation. Divert iS input to iSS 
+    and start urqmd thereafter.
+    """
+    run_record_file_name = 'run_record_hybrid_search.dat'
+    err_record_file_name = 'err_record_hybrid_search.dat'
+    run_record = open(path.join(rootDir, run_record_file_name), 'a')
+    err_record = open(path.join(rootDir, err_record_file_name), 'a')
+    hydro_path = path.join(rootDir, 'VISHNew')
+    iS_results_path  = path.join(rootDir, 'iS', 'results')
+    iSS_path = path.join(rootDir, 'iSS')
+
+    # run after burner for v2
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, eos_name, 2))
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    if path.exists(results_folder_path):
+        shutil.rmtree(results_folder_path)
+    makedirs(results_folder_path)
+    run_afterBurner(iS_results_path, chosen_centrality, run_record, err_record,
+        results_folder_path)
+
+    # run the search for v3
+    run_hybrid_calculation(chosen_centrality, model, ecm,
+                           hydro_path, iSS_path,
+                           run_record, err_record,
+                           norm_factor, vis, tdec, edec, tau0, eos_name,
+                           pre_eq, parallel_mode, 3)
+    run_record.close()
+    err_record.close()
+    shutil.copy(path.join(rootDir, run_record_file_name), 
+        path.join(results_folder_path))
+    shutil.copy(path.join(rootDir, err_record_file_name), 
+        path.join(results_folder_path))
+
 def set_eos(eos_name, tdec):
     """
     This function replace the EOS for the whole simulation
@@ -566,6 +622,91 @@ def set_eos(eos_name, tdec):
     eos_file = np.loadtxt(path.join(hydro_eos_path, 'EOS_PST.dat'))
     edec = np.interp(tdec, eos_file[:,3], eos_file[:, 0])
     return edec
+
+
+
+def run_afterBurner(input_folder, cen_string, run_record, err_record, results_folder_path):
+    """
+    run iSS + osc2u + urqmd once iS or hydro is finished.
+    """
+    iSS_path = path.join(rootDir, 'iSS')
+    iSS_folder_path = path.join(iSS_path, 'results')
+    if path.exists(iSS_folder_path):
+        shutil.rmtree(iSS_folder_path)
+
+    # copy necessary files to iSS folder
+    worth_moving = []
+    for aGlob in ['surface.dat', 'dec*.dat']:
+        worth_moving.extend(glob(path.join(input_folder, aGlob)))
+    for aFile in glob(path.join(input_folder, '*')):
+        if aFile in worth_moving:
+            shutil.copy(aFile, iSS_results_path) 
+
+    # iSS
+    output_file = 'OSCAR.DAT'
+    if path.isfile(path.join(iSS_path, output_file)):
+        remove(path.join(iSS_path, output_file))
+    print "%s : %s" % (cen_string, 'iSS.e')
+    sys.stdout.flush()
+    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                         stdout=run_record, stderr=err_record, cwd=iSS_path)
+    p.wait()
+
+    worth_storing = []
+    for aGlob in ['*vn*.dat']:
+        worth_storing.extend(glob(path.join(iSS_folder_path, aGlob)))
+    for aFile in glob(path.join(iSS_folder_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, results_folder_path)
+    shutil.rmtree(iSS_folder_path)  # clean up
+
+    if parallel_mode != 0:
+        # run subsequent programs in parallel
+        result_files = split_iSS_events(number_of_split = parallel_mode,
+                                        output_folder = results_folder_path)
+        remove(path.join(iSS_path, 'OSCAR.DAT')) # clean up to save disk space
+    else:
+        #osc2u
+        o2u_path = path.join(rootDir,'osc2u')
+        input_file = 'OSCAR.DAT'
+        output_file = 'fort.14'
+        if path.isfile(path.join(o2u_path, input_file)):
+            remove(path.join(o2u_path, input_file))
+        if path.isfile(path.join(o2u_path, output_file)):
+            remove(path.join(o2u_path, output_file))
+        shutil.move(path.join(iSS_path, input_file), o2u_path)
+        print "%s : %s" % (cen_string, 'osu2u.e')
+        sys.stdout.flush()
+        p = subprocess.Popen('./osc2u.e < %s' % input_file, shell=True,
+                             stdout=run_record, stderr=err_record, cwd=o2u_path)
+        p.wait()
+        remove(path.join(o2u_path, input_file))  # clean up
+
+        #UrQMD
+        UrQMD_path = path.abspath(rootDir,'urqmd')
+        input_file = 'OSCAR.input'
+        output_file = 'particle_list.dat'
+        if path.isfile(path.join(UrQMD_path, input_file)):
+            remove(path.join(UrQMD_path, input_file))
+        if path.isfile(path.join(UrQMD_path, output_file)):
+            remove(path.join(UrQMD_path, output_file))
+        shutil.move(path.join(o2u_path, 'fort.14'),
+                    path.join(UrQMD_path, input_file))
+        print "%s : %s" % (cen_string, 'runqmd.sh')
+        sys.stdout.flush()
+        p = subprocess.Popen('bash runqmd.sh', shell=True, stdout=run_record,
+                             stderr=err_record, cwd=UrQMD_path)
+        p.wait()
+
+        worth_storing = []
+        for aGlob in ['particle_list.dat']:
+            worth_storing.extend(glob(path.join(UrQMD_path, aGlob)))
+        for aFile in glob(path.join(UrQMD_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, results_folder_path)
+        remove(path.join(UrQMD_path, input_file))  # clean up
+        remove(path.join(UrQMD_path, output_file))  # clean up
+
 
 def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
                     cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
@@ -648,7 +789,10 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     if fit_flag:
         print "fitting the overall normalization factor ..."
         norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
-        norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq, norm_factor_guess)
+        if mode == "hybrid_search":
+            norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq, norm_factor_guess, chosen_centrality) # directly fit hydro at 10-20% centrality
+        else:
+            norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq, norm_factor_guess)
     else:
         norm_factor = norm_factor_default
     if mode == 'hydro':
@@ -658,6 +802,10 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     elif mode == 'hybrid':
         print "running hybrid simulations for centrality bin(s): %s..."%chosen_centrality
         run_hybrid(model, ecm, norm_factor, vis, tdec, edec, tau0,
+                   eos_name, chosen_centrality, pre_eq, parallel_mode)
+    elif mode =="hybrid_search":
+        print "running hybrid search simulations for centrality bin(s): %s..."%chosen_centrality
+        run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec, tau0,
                    eos_name, chosen_centrality, pre_eq, parallel_mode)
     else:
         print sys.argv[0], ': invalid running mode', mode
@@ -820,7 +968,7 @@ if __name__ == "__main__":
         print sys.argv[0], ': invalid collision energy', ecm
         sys.exit(1)
 
-    if mode in ['hydro', 'hybrid']:
+    if mode in ['hydro', 'hybrid', 'hybrid_search']:
         run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
                         cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
                         parallel_mode)
