@@ -347,6 +347,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     iSS_folder_path = path.join(iSS_path, 'results')
     if path.exists(iSS_folder_path):
         shutil.rmtree(iSS_folder_path)
+    makedirs(iSS_folder_path)
     output_file = 'OSCAR.DAT'
     if path.isfile(path.join(iSS_path, output_file)):
         remove(path.join(iSS_path, output_file))
@@ -449,9 +450,9 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_
         print "dNdeta_goal = %g, dNdeta = %g, norm = : %g" % (
             dNdeta_goal, dN_deta, norm_factor,)
         sys.stdout.flush()
-        shutil.rmtree(path.join(iS_path, 'results'))
         if abs(dN_deta - dNdeta_goal) / dNdeta_goal > tol:
             norm_factor = norm_factor * dNdeta_goal / dN_deta
+            shutil.rmtree(path.join(iS_path, 'results')) 
         else:
             break
 
@@ -644,6 +645,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
     iSS_folder_path = path.join(iSS_path, 'results')
     if path.exists(iSS_folder_path):
         shutil.rmtree(iSS_folder_path)
+    makedirs(iSS_folder_path)
 
     # copy necessary files to iSS folder
     worth_moving = []
@@ -651,7 +653,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         worth_moving.extend(glob(path.join(input_folder, aGlob)))
     for aFile in glob(path.join(input_folder, '*')):
         if aFile in worth_moving:
-            shutil.copy(aFile, iSS_results_path) 
+            shutil.copy(aFile, iSS_folder_path) 
 
     # iSS
     output_file = 'OSCAR.DAT'
