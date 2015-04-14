@@ -567,8 +567,8 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
     """
     run_record_file_name = 'run_record_hybrid_search.dat'
     err_record_file_name = 'err_record_hybrid_search.dat'
-    run_record = open(path.join(rootDir, run_record_file_name), 'a')
-    err_record = open(path.join(rootDir, err_record_file_name), 'a')
+    run_record = open(path.join(rootDir, run_record_file_name), 'w+')
+    err_record = open(path.join(rootDir, err_record_file_name), 'w+')
     hydro_path = path.join(rootDir, 'VISHNew')
     iS_results_path  = path.join(rootDir, 'iS', 'results')
     iSS_path = path.join(rootDir, 'iSS')
@@ -580,6 +580,14 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
     if path.exists(results_folder_path):
         shutil.rmtree(results_folder_path)
     makedirs(results_folder_path)
+
+    # save files after hydro run
+    worth_storing = []
+    for aGlob in ['surface.dat', 'dec*.dat', 'ecc*.dat', 'VISH2p1_tec.dat']: #debug
+        worth_storing.extend(glob(path.join(iS_results_path, aGlob)))
+    for aFile in glob(path.join(iS_results_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, results_folder_path)
     run_afterBurner(iS_results_path, chosen_centrality, run_record, err_record,
         results_folder_path)
 
