@@ -303,7 +303,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     cleanUpFolder(hydro_initial_path)
     # run pre-equilibrium
     if(pre_eq == True):
-        run_pre_eq(initial_path, cen_string, run_record, err_record, tau0)
+        run_pre_eq(initial_path, cen_string, run_record, err_record, tau0, flow_order)
         for aFile in glob(path.join(rootDir, 'fs/data/result/event_1/%g'%tau0, '*')):
             shutil.move(aFile, hydro_initial_path)
     else:
