@@ -347,12 +347,11 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     iSS_folder_path = path.join(iSS_path, 'results')
     if path.exists(iSS_folder_path):
         shutil.rmtree(iSS_folder_path)
-    makedirs(iSS_folder_path)
     output_file = 'OSCAR.DAT'
     if path.isfile(path.join(iSS_path, output_file)):
         remove(path.join(iSS_path, output_file))
     shutil.move(path.join(hydro_path, 'results'),
-                path.join(iSS_path, 'results'))
+        path.join(iSS_path, 'results'))
     print "%s : %s" % (cen_string, 'iSS.e')
     sys.stdout.flush()
     p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
