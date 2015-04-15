@@ -157,8 +157,8 @@ def runHydro_paramSearch():
                                              number_of_nodes)
     backup_path = path.join('/nfs/gpfs/PAS0254/paramSearch',
         '%s_%d'%(runHydroParameters['model'], runHydroParameters['pre_eq']))
-    if not path.exists(backup_path):
-        makedirs(backup_path)
+    # if not path.exists(backup_path):
+    #     makedirs(backup_path)
     flow_order_list = [2,3]
     if params_currentNode.ndim==1: # only one line
         params_now = params_currentNode[:-1]
