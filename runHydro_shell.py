@@ -73,7 +73,7 @@ def collectObservables(flow_order_list):
         # move files to EbeCollector folder
         if path.exists(path.join(ebeCollector_folder, 'event-1')):
             shutil.rmtree(path.join(ebeCollector_folder, 'event-1'))
-            makedirs(path.join(ebeCollector_folder, 'event-1'))
+        makedirs(path.join(ebeCollector_folder, 'event-1'))
         for aFile in particle_list_files:
             shutil.move(aFile, path.join(ebeCollector_folder, 'event-1'))
         # start to collect database --> from particle_list to particles.db
