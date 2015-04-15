@@ -281,7 +281,7 @@ def collectObservables(result_folder, parallel_mode):
     for aFile in particle_list_files:
         shutil.move(aFile, path.join(ebeCollector_folder, 'event-1'))
     # start to collect database --> from particle_list to particles.db
-    if len(particle_list_files)==1:
+    if len(particle_list_files) == 1:
         subprocess.call("python EbeCollectorShell_particlesUrQMD.py ./ 1>run_log.dat 2>run_err.dat", 
             shell=True, cwd=ebeCollector_folder)
     else:
@@ -442,7 +442,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
             shutil.copy(aFile, results_folder_path)
     shutil.rmtree(iSS_folder_path)  # clean up
 
-    if parallel_mode != 0:
+    if parallel_mode > 1:
         # run subsequent programs in parallel
         result_files = split_iSS_events(number_of_split = parallel_mode,
                                         output_folder = results_folder_path)
