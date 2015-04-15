@@ -29,6 +29,7 @@ dn_deta_dict = {'5500.0': 1974.234,
                 '200.0': 691,
                 '62.4': 472, }
 rootDir = path.abspath('../')
+project_directory = '/nfs/gpfs/PAS0254/paramSearch'
 
 class color:
     """
@@ -252,6 +253,81 @@ def split_iSS_events(number_of_split,
     # clean and quit
     shutil.rmtree(temp_folder)
     return result_files
+
+
+def collectObservables(result_folder, parallel_mode):
+    """
+    Collect the particle_list to database, and only keep the analyzed database.
+    Return: the results folder name
+    """
+    # collect to database
+    results_path = path.join(rootDir, "RESULTS")
+    ebeCollector_folder = path.join(rootDir,"EbeCollector")
+    results_folder_path = path.join(results_path, result_folder)
+    flow_order = result_folder.split('_v')[-1]
+    params_search_log = open(path.join('..', 'param_search_log_v%s.dat'%flow_order),
+        'a+')
+    particle_list_files = glob(path.join(results_folder_path, 'particle_list*.dat'))
+    # decide if parallel model ends properly
+    if parallel_mode!=len(particle_list_files):
+        print "Warning: parallel run mode does not end properly!"
+        print "only %d of %d output file exist!\n"%(len(particle_list_files),
+                                            parallel_mode)
+    # move files to EbeCollector folder
+    if path.exists(path.join(ebeCollector_folder, 'event-1')):
+        shutil.rmtree(path.join(ebeCollector_folder, 'event-1'))
+    makedirs(path.join(ebeCollector_folder, 'event-1'))
+    print "collectMoveDB"+"="*20+'\n'
+    for aFile in particle_list_files:
+        shutil.move(aFile, path.join(ebeCollector_folder, 'event-1'))
+    # start to collect database --> from particle_list to particles.db
+    if len(particle_list_files)==1:
+        subprocess.call("python EbeCollectorShell_particlesUrQMD.py ./ 1>run_log.dat 2>run_err.dat", 
+            shell=True, cwd=ebeCollector_folder)
+    else:
+        subprocess.call("python EbeCollectorShell_particlesUrQMD_parallel.py ./ %d 1>run_log.dat 2>run_err.dat"%len(particle_list_files),
+            shell=True, cwd=ebeCollector_folder)
+    # silt particle info  --> from particles.db to analyzed_particles.db
+    subprocess.call("python particleReaderShell.py particles.db 1>run_log.dat 2>run_err.dat",
+        shell=True, cwd=ebeCollector_folder)
+    # output final observables
+    subprocess.call("python AnalyzedEventsReader.py analyzed_particles.db 1>run_log.dat 2>run_err.dat",
+        shell=True, cwd=ebeCollector_folder)
+    # collect data
+    params_output = np.loadtxt(path.join(ebeCollector_folder, 
+                                        'paramSearch_result.dat'))
+    params_search_log.write(" ".join(map(lambda(x): '%10.8e'%x, params_output[:]))+'\n')
+    params_search_log.close()
+    # save the analyzed database to result folder
+    shutil.move(path.join(ebeCollector_folder, 'analyzed_particles.db'),
+        results_folder_path)
+    # clean up source files
+    for aFile in particle_list_files:
+        if path.isfile(path.join(ebeCollector_folder, 'event-1', aFile)):
+            remove(path.join(ebeCollector_folder, 'event-1', aFile))
+    remove(path.join(ebeCollector_folder, 'particles.db'))
+    return results_folder_path
+
+
+def moveDB(source_folder, model, pre_eq):
+    backup_path = path.join(project_directory, 
+        '%s_%d'%(model, pre_eq))
+    # compress
+    zipped_file_name = source_folder+'.zip' 
+    zip_cmd = ('zip -r -q -m %s'%zipped_file_name + 
+        ' %s/'%source_folder)
+    print "Start to compress file: %s......"%zipped_file_name
+    subprocess.call(zip_cmd, shell=True, cwd=path.join(rootDir, 'RESULTS'))
+    if not path.exists(backup_path):
+        print "Cannot find backup path: %s"%backup_path
+    else:
+        # backup 
+        if path.exists(path.join(backup_path, zipped_file_name)):
+            remove(path.join(backup_path, zipped_file_name))
+        shutil.move(path.join(rootDir, 'RESULTS', zipped_file_name),
+            backup_path)
+        print "File %s saved to project folder!"%zipped_file_name
+    print "collectMoveDB"+"="*20+'\n'
 
 
 def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
@@ -596,13 +672,23 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
             shutil.copy(aFile, results_folder_path)
     run_afterBurner(iS_results_path, chosen_centrality, run_record, err_record,
         results_folder_path)
+    # collect db and backup v2 search result
+    collectObservables(result_folder, parallel_mode)
+    moveDB(result_folder, model, pre_eq)
 
     # run the search for v3
+    print "Start to search v3:"
     run_hybrid_calculation(chosen_centrality, model, ecm,
                            hydro_path, iSS_path,
                            run_record, err_record,
                            norm_factor, vis, tdec, edec, tau0, eos_name,
                            pre_eq, parallel_mode, 3)
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, eos_name, 3))
+    # collect db and backup v3 search result
+    collectObservables(result_folder, parallel_mode)
+    moveDB(result_folder, model, pre_eq)
+
     run_record.close()
     err_record.close()
     shutil.copy(path.join(rootDir, run_record_file_name), 
@@ -690,7 +776,6 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         # run subsequent programs in parallel
         result_files = split_iSS_events(number_of_split = parallel_mode,
                                         output_folder = results_folder_path)
-        remove(path.join(iSS_path, 'OSCAR.DAT')) # clean up to save disk space
     else:
         #osc2u
         o2u_path = path.join(rootDir,'osc2u')

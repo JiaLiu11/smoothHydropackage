@@ -46,65 +46,6 @@ def splitParameterTable(infile_name, number_of_nodes):
     return params_selected
 
 
-def collectObservables(flow_order_list):
-    """
-    Collect the particle_list to database, and only keep the analyzed database.
-    Return: the results folder name
-    """
-    # collect to database
-    results_path = path.abspath("../RESULTS")
-    ebeCollector_folder = path.abspath("../EbeCollector")
-    # loop over v2 and v3
-    for flow_order in flow_order_list:
-        params_search_log = open(path.join('..', 'param_search_log_v%d.dat'%flow_order),
-            'a+')
-        result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s_v%d'
-                         % (runHydroParameters["model"], runHydroParameters["ecm"], 
-                            runHydroParameters["vis"], runHydroParameters["cen"], 
-                            runHydroParameters["Tdec"], runHydroParameters["tau0"], 
-                            runHydroParameters["EOS"], flow_order))
-        result_path_now = path.join(results_path, result_folder)
-        particle_list_files = glob(path.join(result_path_now, 'particle_list*.dat'))
-        # decide if parallel model ends properly
-        if runHydroParameters["parallel_mode"]!=len(particle_list_files):
-            print "Warning: parallel run mode does not end properly!"
-            print "only %d of %d output file exist!\n"%(len(particle_list_files),
-                                                runHydroParameters["parallel_mode"])
-        # move files to EbeCollector folder
-        if path.exists(path.join(ebeCollector_folder, 'event-1')):
-            shutil.rmtree(path.join(ebeCollector_folder, 'event-1'))
-        makedirs(path.join(ebeCollector_folder, 'event-1'))
-        for aFile in particle_list_files:
-            shutil.move(aFile, path.join(ebeCollector_folder, 'event-1'))
-        # start to collect database --> from particle_list to particles.db
-        if len(particle_list_files)==1:
-            call("python EbeCollectorShell_particlesUrQMD.py ./", 
-                shell=True, cwd=ebeCollector_folder)
-        else:
-            call("python EbeCollectorShell_particlesUrQMD_parallel.py ./ %d"%len(particle_list_files),
-                shell=True, cwd=ebeCollector_folder)
-        # silt particle info  --> from particles.db to analyzed_particles.db
-        call("python particleReaderShell.py particles.db",
-            shell=True, cwd=ebeCollector_folder)
-        # output final observables
-        call("python AnalyzedEventsReader.py analyzed_particles.db",
-            shell=True, cwd=ebeCollector_folder)
-        # collect data
-        params_output = np.loadtxt(path.join(ebeCollector_folder, 
-                                            'paramSearch_result.dat'))
-        params_search_log.write(" ".join(map(lambda(x): '%10.8e'%x, params_output[:]))+'\n')
-        params_search_log.close()
-        # save the analyzed database to result folder
-        shutil.move(path.join(ebeCollector_folder, 'analyzed_particles.db'),
-            result_path_now)
-        # clean up source files
-        for aFile in particle_list_files:
-            if path.isfile(path.join(ebeCollector_folder, 'event-1', aFile)):
-                remove(path.join(ebeCollector_folder, 'event-1', aFile))
-        remove(path.join(ebeCollector_folder, 'particles.db'))
-    return result_folder
-
-
 def updateParameters(params_oneline):
     """
         update parameters runHydroParameters for working in parameter search mode. 
@@ -159,11 +100,6 @@ def runHydro_paramSearch():
     number_of_nodes = len(glob(path.join('../../', 'node?')))
     params_currentNode = splitParameterTable('../tables/params_list.dat',
                                              number_of_nodes)
-    backup_path = path.join('/nfs/gpfs/PAS0254/paramSearch',
-        '%s_%d'%(runHydroParameters['model'], runHydroParameters['pre_eq']))
-    # if not path.exists(backup_path):
-    #     makedirs(backup_path)
-    flow_order_list = [2,3]
     if params_currentNode.ndim==1: # only one line
         params_now = params_currentNode[:-1]
         updateParameters(params_now)
@@ -173,20 +109,6 @@ def runHydro_paramSearch():
         executableString = './runHydro.py' + assignments
         # execute!
         run(executableString, cwd=path.abspath("./"))
-        # collect
-        save_folder_name = collectObservables(flow_order_list)
-        # compress
-        zipped_file_name = save_folder_name.split('_v')[0]+'.zip'
-        zip_cmd = ('zip -r -q -m %s'%zipped_file_name + 
-            ' ./MC*')
-        print "runHydro_shell: start to compress file: %s......"%zipped_file_name
-        call(zip_cmd, shell=True, cwd=path.abspath('../RESULTS'))
-        # backup 
-        if path.exists(path.join(backup_path, zipped_file_name)):
-            remove(path.exists(backup_path, zipped_file_name))
-        shutil.move(path.join('../RESULTS', zipped_file_name),
-            backup_path)
-        print "runHydro_shell: file %s saved to project folder!\n"%zipped_file_name
     else:        
         for i in range(params_currentNode.shape[0]):
             params_now = params_currentNode[i, :-1] # each line has four parameters: taus, eta/s, tdec, edec
@@ -197,20 +119,6 @@ def runHydro_paramSearch():
             executableString = './runHydro.py' + assignments
             # execute!
             run(executableString, cwd=path.abspath("./"))
-            # collect
-            save_folder_name = collectObservables(flow_order_list)
-            # compress
-            zipped_file_name = save_folder_name.split('_v')[0]+'.zip'
-            zip_cmd = ('zip -r -q -m %s'%zipped_file_name + 
-                ' ./MC*')
-            print "runHydro_shell: start to compress file: %s......"%zipped_file_name
-            call(zip_cmd, shell=True, cwd=path.abspath('../RESULTS'))
-            # backup 
-            if path.exists(path.join(backup_path, zipped_file_name)):
-                remove(path.exists(backup_path, zipped_file_name))
-            shutil.move(path.join('../RESULTS', zipped_file_name),
-                backup_path)
-            print "runHydro_shell: file %s saved to project folder!\n"%zipped_file_name
 
 
 if __name__ == "__main__":
