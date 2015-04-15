@@ -431,6 +431,7 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_
     norm_factor = norm_factor_guess
     tol = 6*1e-3 # approximately 10 when dNdeta_goal = 1600
     target_file = 'Charged_eta_integrated_vndata.dat'
+    sfactor_log = open(path.join('..', 'sfactor_log.dat'), 'a+')
     while 1:
         try:
             icen = cen_list.index(cen_string)
@@ -451,10 +452,14 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_
         sys.stdout.flush()
         if abs(dN_deta - dNdeta_goal) / dNdeta_goal > tol:
             norm_factor = norm_factor * dNdeta_goal / dN_deta
+            sfactor_log.write("0 %.6f \t %.6f \t %.6f\t  %10.6e \t   %10.8f  \n"%(
+                tau0, vis, edec, norm_factor, dN_deta))
             shutil.rmtree(path.join(iS_path, 'results')) 
         else:
+            sfactor_log.write("1 %.6f \t %.6f \t %.6f\t  %10.6e \t   %10.8f  \n"%(
+                tau0, vis, edec, norm_factor, dN_deta))
             break
-
+    sfactor_log.close()
     if(path.isfile(path.join(rootDir, 'RESULTS', run_record_file_name))):
         remove(path.join(rootDir, 'RESULTS', run_record_file_name))
     if(path.isfile(path.join(rootDir, 'RESULTS', err_record_file_name))):
