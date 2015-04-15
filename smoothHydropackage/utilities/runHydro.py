@@ -501,8 +501,8 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_
     """
     run_record_file_name = 'run_record_fitNorm.dat'
     err_record_file_name = 'err_record_fitNorm.dat'
-    run_record = open(path.join(rootDir, run_record_file_name), 'a')
-    err_record = open(path.join(rootDir, err_record_file_name), 'a')
+    run_record = open(path.join(rootDir, run_record_file_name), 'w+')
+    err_record = open(path.join(rootDir, err_record_file_name), 'w+')
     hydro_path = path.join(rootDir, 'VISHNew')
     iS_path = path.join(rootDir, 'iS')
     norm_factor = norm_factor_guess
