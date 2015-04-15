@@ -193,6 +193,7 @@ def split_iSS_events(number_of_split,
     p = subprocess.Popen(split_cmd, shell=True, cwd = iSS_path)
     p.wait()
     print "%s splitted!\n"%split_script
+    remove(path.join(iSS_path, input_file)) # delete OSCAR.DAT to save disk space
 
     # replicate osc2u and urqmd
     print "Start to copy osc2u, urqmd folders and input files"+'.'*3
