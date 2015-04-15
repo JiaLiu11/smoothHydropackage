@@ -97,6 +97,10 @@ def collectObservables(flow_order_list):
         # save the analyzed database to result folder
         shutil.move(path.join(ebeCollector_folder, 'analyzed_particles.db'),
             result_path_now)
+        # clean up source files
+        for aFile in particle_list_files:
+            if path.isfile(path.join(ebeCollector_folder, 'event-1', aFile)):
+                remove(path.join(ebeCollector_folder, 'event-1', aFile))
         remove(path.join(ebeCollector_folder, 'particles.db'))
     return result_folder
 
