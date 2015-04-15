@@ -118,6 +118,7 @@ for i in range(1, numberOfJobs+1):
 #PBS -l walltime=%s
 #PBS -l mem=8GB
 #PBS -j oe
+#PBS -l nodes=1:ppn=10
 #PBS -S /bin/bash
 module load python/2.7.1 # for osc oakley cluster
 cd %s
