@@ -5,7 +5,7 @@ from os import path, makedirs, remove
 import subprocess
 from glob import glob
 import numpy as np
-
+import re
 import sys
 
 # centrality list
@@ -260,6 +260,10 @@ def collectObservables(result_folder, parallel_mode):
     Collect the particle_list to database, and only keep the analyzed database.
     Return: the results folder name
     """
+    # extract run parameters for result_folder
+    num_from_str = map(float, re.findall(r"[-+]?\d*\.\d+|\d+",result_folder))
+    taus, etas, tdec = [num_from_str[i] for i in [5,1,4]]
+
     # collect to database
     results_path = path.join(rootDir, "RESULTS")
     ebeCollector_folder = path.join(rootDir,"EbeCollector")
@@ -296,7 +300,9 @@ def collectObservables(result_folder, parallel_mode):
     # collect data
     params_output = np.loadtxt(path.join(ebeCollector_folder, 
                                         'paramSearch_result.dat'))
-    params_search_log.write(" ".join(map(lambda(x): '%10.8e'%x, params_output[:]))+'\n')
+    result_line = ("%.8f \t %.8f \t %.8f \t"%(taus, etas, tdec)+
+        " ".join(map(lambda(x): '%10.8e'%x, params_output[:]))+'\n')
+    params_search_log.write(result_line)
     params_search_log.close()
     # save the analyzed database to result folder
     shutil.move(path.join(ebeCollector_folder, 'analyzed_particles.db'),
