@@ -97,7 +97,7 @@ def runHydro_paramSearch():
         Automatically detect the node name, extract the parameter combinations 
         for current node, and run parameter search.
     """
-    number_of_nodes = len(glob(path.join('../../', 'node?')))
+    number_of_nodes = len(glob(path.join('../../', 'node*')))
     params_currentNode = splitParameterTable('../tables/params_list.dat',
                                              number_of_nodes)
     if params_currentNode.ndim==1: # only one line
