@@ -268,9 +268,9 @@ void EmissionFunctionArray::calculate_dN_ptdptdphidy(int particle_idx)
                   double deltaf = (1 - F0_IS_NOT_SMALL*sign*f0)*Wfactor*deltaf_prefactor;
                   double bulk_deltaf = -(1. - F0_IS_NOT_SMALL*sign*f0)*bulkPi*(bulkvisCoefficients[0]*mass*mass + bulkvisCoefficients[1]*pdotu + bulkvisCoefficients[2]*pdotu*pdotu);
                   double result;
-                  //if(1 + deltaf + bulk_deltaf < 0.0) //set results to zero when delta f turns whole expression to negative
-                  //   result = 0.0;
-                  //else
+                  if(1 + deltaf + bulk_deltaf < 0.0) //set results to zero when delta f turns whole expression to negative
+                    result = 0.0;
+                  else
                      result = prefactor*degen*f0*(1. + deltaf + bulk_deltaf)*pdsigma*tau;
 
                   dN_ptdptdphidy_tmp += result*delta_eta;
