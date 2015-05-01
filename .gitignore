@@ -7,6 +7,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+PlayGround/
 env/
 bin/
 build/
@@ -52,7 +53,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
-*.[oa]
+*.[oae]
 *.~
 .DS_Store
 results/
