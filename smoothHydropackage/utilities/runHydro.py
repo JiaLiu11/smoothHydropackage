@@ -262,7 +262,7 @@ def collectObservables(result_folder, parallel_mode):
     """
     # extract run parameters for result_folder
     num_from_str = map(float, re.findall(r"[-+]?\d*\.\d+|\d+",result_folder))
-    taus, etas, tdec = [num_from_str[i] for i in [5,1,4]]
+    taus, etas, tdec, VisBulkNorm = [num_from_str[i] for i in [5,1,4,6]]
 
     # collect to database
     results_path = path.join(rootDir, "RESULTS")
@@ -300,7 +300,7 @@ def collectObservables(result_folder, parallel_mode):
     # collect data
     params_output = np.loadtxt(path.join(ebeCollector_folder, 
                                         'paramSearch_result.dat'))
-    result_line = ("%.8f \t %.8f \t %.8f \t"%(taus, etas, tdec)+
+    result_line = ("%.8f \t %.8f \t %.8f \t %.8f \t"%(taus, etas, tdec, VisBulkNorm)+
         " ".join(map(lambda(x): '%10.8e'%x, params_output[:]))+'\n')
     params_search_log.write(result_line)
     params_search_log.close()
