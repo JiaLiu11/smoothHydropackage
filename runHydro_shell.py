@@ -14,6 +14,7 @@ runHydroParameters = {
     'vis'              :  0.08,      #the specific shear viscosity used in the hydro simulation eta/s = 0.08 [default]
     'Tdec'             :  0.155,      #the decoupling temperature (GeV) used in the hydro simulation Tdec = 0.12 GeV [default]
     'tau0'             :  0.6,       #the hydrodynamic starting proper time (fm/c) tau0 = 0.6 fm/c [default]
+    'VisBulkNorm'      :  1.0,       #the normalization factor for zeta/s(T) [default 1.0]
     'EOS'              :  's95p-v1', #s95p-v0-PCE165 [default], s95p-v1-PCE150, s95p-v1, SM-EOS-Q
     'cf_flag'          :  True,      #switch to perfrom Cooper-Frye freeze-out in pure hydro simulation cf_flag = True [default]
     'fit_flag'         :  True,      #switch to perfrom fit for normalization factor to charged multiplicity fit_flag = True [default]
@@ -51,11 +52,12 @@ def updateParameters(params_oneline):
         update parameters runHydroParameters for working in parameter search mode. 
         input: switching time, shear viscosity, switching temperature
     """
-    taus, vis, tsw = params_oneline
+    taus, vis, tsw, visbulknorm = params_oneline
     # update dictionary
     runHydroParameters['tau0']= taus
     runHydroParameters['vis'] = vis
     runHydroParameters['Tdec']= tsw*0.001 # MeV --> GeV
+    runHydroParameters['VisBulkNorm'] = visbulknorm
 
 
 def formAssignmentStringFromDict(aDict):
@@ -101,7 +103,7 @@ def runHydro_paramSearch():
     params_currentNode = splitParameterTable('../tables/params_list.dat',
                                              number_of_nodes)
     if params_currentNode.ndim==1: # only one line
-        params_now = params_currentNode[:-1]
+        params_now = params_currentNode[:]
         updateParameters(params_now)
         # form assignment string
         assignments = formAssignmentStringFromDict(runHydroParameters)
@@ -111,7 +113,7 @@ def runHydro_paramSearch():
         run(executableString, cwd=path.abspath("./"))
     else:        
         for i in range(params_currentNode.shape[0]):
-            params_now = params_currentNode[i, :-1] # each line has four parameters: taus, eta/s, tdec, edec
+            params_now = params_currentNode[i, :] # each line has four parameters: taus, eta/s, tdec, edec
             updateParameters(params_now)
             # form assignment string
             assignments = formAssignmentStringFromDict(runHydroParameters)

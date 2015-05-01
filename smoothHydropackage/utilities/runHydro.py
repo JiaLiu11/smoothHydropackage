@@ -128,7 +128,7 @@ def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0, flow_orde
     p.wait()
 
 def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
-                  norm_factor, vis, edec, tau0, pre_eq):
+                  norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq):
     """
         Perform pure hydro simulations with averaged initial conditions
     """
@@ -150,12 +150,12 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     cmd = './VISHNew.e'
     if(pre_eq == True):
         args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
-                % (tau0, edec, vis, norm_factor, pre_eq))
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
     else:
         args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
-                % (tau0, edec, vis, norm_factor, pre_eq))
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
     print "%s : %s" % (cen_string, cmd + args)
     sys.stdout.flush()
     run_record.write(cmd + args)
@@ -337,13 +337,13 @@ def moveDB(source_folder, model, pre_eq):
 
 
 def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
-                      norm_factor, vis, edec, tau0, pre_eq):
+                      norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq):
     """
         Perform pure hydro simulations + Cooper Frye freeze-out
         with averaged initial conditions
     """
     run_hydro_evo(cen_string, hydro_path, run_record, err_record,
-                  norm_factor, vis, edec, tau0, pre_eq)
+                  norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq)
 
     # move hydro results to iS
     hydro_results_path = path.join(hydro_path, 'results')
@@ -364,7 +364,7 @@ def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
 
 def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
                            run_record, err_record,
-                           norm_factor, vis, tdec, edec, tau0, eos_name,
+                           norm_factor, vis, tdec, edec, tau0, VisBulkNorm, eos_name,
                            pre_eq, parallel_mode, flow_order=2):
     """
         Perform hydro + UrQMD hybrid simulations with averaged initial
@@ -372,11 +372,13 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     """
     initial_path = path.join(rootDir, 'RESULTS/initial_conditions')
     if not flow_order==2:
-        result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s_v%d'
-                         % (model, ecm, vis, cen_string, tdec, tau0, eos_name, flow_order))
+        result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                         % (model, ecm, vis, cen_string, tdec, tau0, VisBulkNorm, 
+                            eos_name, flow_order))
     else:
-        result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s'
-                         % (model, ecm, vis, cen_string, tdec, tau0, eos_name))
+        result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s'
+                         % (model, ecm, vis, cen_string, tdec, tau0, VisBulkNorm,
+                            eos_name))
     results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
     if path.exists(results_folder_path):
         shutil.rmtree(results_folder_path)
@@ -405,12 +407,12 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     cmd = './VISHNew.e'
     if(pre_eq == True):
         args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
-                % (tau0, edec, vis, norm_factor, pre_eq))
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
     else:
         args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d'
-                % (tau0, edec, vis, norm_factor, pre_eq))
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
 
     print "%s : %s" % (cen_string, cmd + args)
     sys.stdout.flush()
@@ -495,7 +497,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         remove(path.join(UrQMD_path, output_file))  # clean up
 
 
-def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_string="0-5"):
+def fit_hydro(dNdeta_goal, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess=10.0, cen_string="0-5"):
     """
     This function find the overall normalization factor for the hydrodynamic
     simulations at given collision energy
@@ -525,7 +527,7 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_
 
         run_hydro_with_iS(cen_list[icen], hydro_path, iS_path, 
                           run_record, err_record,
-                          norm_factor, vis, edec, tau0, pre_eq)
+                          norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq)
         # get target results
         temp_data = open(path.join(iS_path, 'results', target_file), 'r')
         dN_deta = float(temp_data.readline().split()[1])
@@ -535,12 +537,12 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_
         sys.stdout.flush()
         if abs(dN_deta - dNdeta_goal) / dNdeta_goal > tol:
             norm_factor = norm_factor * dNdeta_goal / dN_deta
-            sfactor_log.write("0 %.6f \t %.6f \t %.6f\t  %10.6e \t   %10.8f  \n"%(
-                tau0, vis, edec, norm_factor, dN_deta))
+            sfactor_log.write("0 %.6f \t %.6f \t %.6f\t  %.6f  \t  %10.6e \t   %10.8f  \n"%(
+                tau0, vis, edec, VisBulkNorm, norm_factor, dN_deta))
             shutil.rmtree(path.join(iS_path, 'results')) 
         else:
-            sfactor_log.write("1 %.6f \t %.6f \t %.6f\t  %10.6e \t   %10.8f  \n"%(
-                tau0, vis, edec, norm_factor, dN_deta))
+            sfactor_log.write("1 %.6f \t %.6f \t %.6f\t  %.6f  \t  %10.6e \t   %10.8f  \n"%(
+                tau0, vis, edec, VisBulkNorm, norm_factor, dN_deta))
             break
     sfactor_log.close()
     if(path.isfile(path.join(rootDir, 'RESULTS', run_record_file_name))):
@@ -554,7 +556,7 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, pre_eq, norm_factor_guess=10.0, cen_
     return norm_factor
 
 
-def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
+def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
                   eos_name, cf_flag, chosen_centrality, pre_eq):
     """
     shell function to run pure hydrodynamic simulation for all centrality bins
@@ -571,38 +573,38 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
             if cf_flag:
                 run_hydro_with_iS(cen_list[icen], hydro_path, iS_path,
                                   run_record, err_record,
-                                  norm_factor, vis, edec, tau0, pre_eq)
+                                  norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq)
                 shutil.move(path.join(iS_path, 'results'),
-                            path.join(rootDir,'RESULTS', '%s%.0fVis%gC%sTdec%gTau%g_%s'
+                            path.join(rootDir,'RESULTS', '%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s'
                                       % (model, ecm, vis, cen_list[icen],
-                                         tdec, tau0, eos_name)))
+                                         tdec, tau0, VisBulkNorm, eos_name)))
             else:
                 run_hydro_evo(cen_list[icen], hydro_path,
                               run_record, err_record,
-                              norm_factor, vis, edec, tau0, pre_eq)
+                              norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq)
                 shutil.move(path.join(hydro_path, 'results'),
                             path.join(rootDir, 'RESULTS',
-                                      '%s%.0fVis%gC%sTdec%gTau%g_%s_hydroOnly'
+                                      '%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_hydroOnly'
                                       % (model, ecm, vis, cen_list[icen],
-                                         tdec, tau0, eos_name)))
+                                         tdec, tau0, VisBulkNorm, eos_name)))
     else:
         if cf_flag:
             run_hydro_with_iS(chosen_centrality, hydro_path, iS_path,
                               run_record, err_record,
-                              norm_factor, vis, edec, tau0, pre_eq)
+                              norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq)
             shutil.move(path.join(iS_path, 'results'),
-                        path.join(rootDir, 'RESULTS', '%s%.0fVis%gC%sTdec%gTau%g_%s'
+                        path.join(rootDir, 'RESULTS', '%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s'
                                   % (model, ecm, vis, chosen_centrality,
-                                     tdec, tau0, eos_name)))
+                                     tdec, tau0, VisBulkNorm, eos_name)))
         else:
             run_hydro_evo(chosen_centrality, hydro_path,
                           run_record, err_record,
-                          norm_factor, vis, edec, tau0, pre_eq)
+                          norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq)
             shutil.move(path.join(hydro_path, 'results'),
                         path.join(rootDir, 'RESULTS',
-                                  '%s%.0fVis%gC%sTdec%gTau%g_%s_hydroOnly'
+                                  '%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_hydroOnly'
                                   % (model, ecm, vis, chosen_centrality,
-                                     tdec, tau0, eos_name)))
+                                     tdec, tau0, VisBulkNorm, eos_name)))
             
     if(path.isfile(path.join(rootDir, 'RESULTS', run_record_file_name))):
         remove(path.join(rootDir, 'RESULTS', run_record_file_name))
@@ -615,7 +617,7 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
 
 
 def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
-               tau0, eos_name, chosen_centrality, pre_eq,
+               tau0, VisBulkNorm, eos_name, chosen_centrality, pre_eq,
                parallel_mode):
     """
     shell function for running hybrid calculations for all centrality bins.
@@ -632,13 +634,13 @@ def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
             run_hybrid_calculation(cen_list[icen], model, ecm,
                                    hydro_path, iSS_path,
                                    run_record, err_record, norm_factor,
-                                   vis, tdec, edec, tau0, eos_name, pre_eq,
+                                   vis, tdec, edec, tau0, VisBulkNorm, eos_name, pre_eq,
                                    parallel_mode)
     else:
         run_hybrid_calculation(chosen_centrality, model, ecm,
                                hydro_path, iSS_path,
                                run_record, err_record,
-                               norm_factor, vis, tdec, edec, tau0, eos_name,
+                               norm_factor, vis, tdec, edec, tau0, VisBulkNorm, eos_name,
                                pre_eq, parallel_mode)
 
     shutil.copy(path.join(rootDir, run_record_file_name), 
@@ -647,7 +649,7 @@ def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
         path.join(rootDir, 'RESULTS'))
 
 def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
-               tau0, eos_name, chosen_centrality, pre_eq,
+               tau0, VisBulkNorm, eos_name, chosen_centrality, pre_eq,
                parallel_mode):
     """
     Shell for parameter search mode simulation. Divert iS input to iSS 
@@ -662,8 +664,9 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
     iSS_path = path.join(rootDir, 'iSS')
 
     # run after burner for v2
-    result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s_v%d'
-                     % (model, ecm, vis, chosen_centrality, tdec, tau0, eos_name, 2))
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
+                        eos_name, 2))
     results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
     if path.exists(results_folder_path):
         shutil.rmtree(results_folder_path)
@@ -687,10 +690,11 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
     run_hybrid_calculation(chosen_centrality, model, ecm,
                            hydro_path, iSS_path,
                            run_record, err_record,
-                           norm_factor, vis, tdec, edec, tau0, eos_name,
+                           norm_factor, vis, tdec, edec, tau0, VisBulkNorm, eos_name,
                            pre_eq, parallel_mode, 3)
-    result_folder = ('%s%.0fVis%gC%sTdec%gTau%g_%s_v%d'
-                     % (model, ecm, vis, chosen_centrality, tdec, tau0, eos_name, 3))
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm, 
+                        eos_name, 3))
     # collect db and backup v3 search result
     collectObservables(result_folder, parallel_mode)
     moveDB(result_folder, model, pre_eq)
@@ -825,7 +829,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         remove(path.join(UrQMD_path, output_file))  # clean up
 
 
-def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
+def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos_name,
                     cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
                     parallel_mode):
     """
@@ -837,6 +841,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     :param vis: the specific shear viscosity
     :param tdec: the decoupling temperature
     :param tau0: the starting time of hydrodynamic simulation
+    :param VisBulkNorm: normalization factor for parametrized zeta/s(T)
     :param eos_name: the name of EOS
     :param cf_flag: switch for Cooper-Frye freeze-out
     :param pre_eq : switch for pre-equilibrium evolution
@@ -844,6 +849,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
     """
     print('%s mode: %s sqrt{s} = %s A GeV' % (mode, model, ecm))
     print('eta/s = %g, Tdec = %g GeV, tau0 = %g fm/c' % (vis, tdec, tau0))
+    print('zeta/s norm factor = %g'%VisBulkNorm)
     print('Pre-equilibrium: %s'%pre_eq)
     print('EOS : %s' % eos_name)
 
@@ -907,22 +913,22 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
         print "fitting the overall normalization factor ..."
         norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
         if mode == "hybrid_search":
-            norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq, norm_factor_guess, chosen_centrality) # directly fit hydro at 10-20% centrality
+            norm_factor = fit_hydro(dN_deta, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess, chosen_centrality) # directly fit hydro at 10-20% centrality
         else:
-            norm_factor = fit_hydro(dN_deta, vis, edec, tau0, pre_eq, norm_factor_guess)
+            norm_factor = fit_hydro(dN_deta, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess)
     else:
         norm_factor = norm_factor_default
     if mode == 'hydro':
         print "running pure hydro simulations for centrality bin(s): %s ..."%chosen_centrality
-        run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0,
+        run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
                       eos_name, cf_flag, chosen_centrality, pre_eq)
     elif mode == 'hybrid':
         print "running hybrid simulations for centrality bin(s): %s..."%chosen_centrality
-        run_hybrid(model, ecm, norm_factor, vis, tdec, edec, tau0,
+        run_hybrid(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
                    eos_name, chosen_centrality, pre_eq, parallel_mode)
     elif mode =="hybrid_search":
         print "running hybrid search simulations for centrality bin(s): %s..."%chosen_centrality
-        run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec, tau0,
+        run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
                    eos_name, chosen_centrality, pre_eq, parallel_mode)
     else:
         print sys.argv[0], ': invalid running mode', mode
@@ -933,7 +939,7 @@ def print_help_message():
     print "Usage : "
     print(color.bold
           + "./runHydro.py -ecm ecm "
-          + "[-mode mode -model model -vis vis -Tdec Tdec -tau0 tau0 "
+          + "[-mode mode -model model -vis vis -Tdec Tdec -tau0 tau0 -VisBulkNorm VisBulkNorm"
           + "-EOS eos_name -cf_flag cf_flag -fit_flag fit_flag "
           + "-cen cen_bounds -collision_system collsys]"
           + color.end)
@@ -958,6 +964,9 @@ def print_help_message():
     print(color.bold + "-tau0" + color.end
           + "  the hydrodynamic starting proper time (fm/c) \n"
           + color.bold + "       tau0 = 0.6 fm/c [default]" + color.end)
+    print(color.bold + "-VisBulkNorm" + color.end
+          + "  the normalization factor for zeta/s(T) \n"
+          + color.bold + "       VisBulkNorm = 1.0 [default]" + color.end)
     print(color.bold + "-EOS" + color.end
           + "   the equation of state for hydrodynamic simulation \n"
           + color.purple + color.bold + "       s95p-v0-PCE165 [default]"
@@ -995,6 +1004,7 @@ if __name__ == "__main__":
     vis = 0.08
     tdec = 0.12  # GeV
     tau0 = 0.6  # fm/c
+    VisBulkNorm = 1.0 
     mode = 'hydro'
     model = 'MCGlb'
     eos_name = 's95p-v0-PCE165'
@@ -1016,6 +1026,9 @@ if __name__ == "__main__":
             del sys.argv[1]
         elif option == '-model':
             model = str(sys.argv[1])
+            del sys.argv[1]
+        elif option == '-VisBulkNorm':
+            VisBulkNorm = float(sys.argv[1])
             del sys.argv[1]
         elif option == '-tau0':
             tau0 = float(sys.argv[1])
@@ -1092,7 +1105,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if mode in ['hydro', 'hybrid', 'hybrid_search']:
-        run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, eos_name,
+        run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos_name,
                         cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
                         parallel_mode)
     else:
