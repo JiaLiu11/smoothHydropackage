@@ -802,6 +802,59 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
         path.join(results_folder_path))
 
 
+def run_hybrid_search_precalculated(model, ecm, vis, tdec, 
+               tau0, VisBulkNorm, eos_name, chosen_centrality, pre_eq,
+               parallel_mode):
+    """
+    Shell for parameter search mode simulation after VISHNew running. 
+    Divert VISHNew input to iSS and start urqmd thereafter.
+    This part runs in parallel mode.
+    """
+    run_record_file_name = 'run_record_hybrid_search.dat'
+    err_record_file_name = 'err_record_hybrid_search.dat'
+    run_record = open(path.join(rootDir, run_record_file_name), 'w+')
+    err_record = open(path.join(rootDir, err_record_file_name), 'w+')
+
+    # run after burner for v2
+    flow_order = 2
+    print "Start to search v3:"
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
+                        eos_name, flow_order))
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    if not path.exists(results_folder_path):
+        print "run_hybrid_search_precalculated: no folder %s!"%result_folder
+
+    run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
+        results_folder_path, parallel_mode)
+    # collect db and backup v2 search result
+    collectObservables(result_folder, parallel_mode)
+    moveDB(result_folder, model, pre_eq)
+
+    # run the search for v3
+    flow_order = 3
+    print "Start to search v3:"
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
+                        eos_name, flow_order))
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    if not path.exists(results_folder_path):
+        print "run_hybrid_search_precalculated: no folder %s!"%result_folder
+
+    run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
+        results_folder_path, parallel_mode)
+    # collect db and backup v3 search result
+    collectObservables(result_folder, parallel_mode)
+    moveDB(result_folder, model, pre_eq)
+
+    run_record.close()
+    err_record.close()
+    shutil.copy(path.join(rootDir, run_record_file_name), 
+        path.join(results_folder_path))
+    shutil.copy(path.join(rootDir, err_record_file_name), 
+        path.join(results_folder_path))
+
+
 def set_eos(eos_name, tdec):
     """
     This function replace the EOS for the whole simulation
@@ -1209,6 +1262,10 @@ if __name__ == "__main__":
         run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos_name,
                         cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
                         parallel_mode)
+    elif mode == 'hybrid_usePrecalculated':
+        run_hybrid_search_precalculated(model, ecm, vis, tdec, 
+               tau0, VisBulkNorm, eos_name, chosen_centrality, pre_eq,
+               parallel_mode)
     else:
         print sys.argv[0], ': invalid running mode', mode
         print_help_message()

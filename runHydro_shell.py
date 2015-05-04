@@ -9,7 +9,7 @@ import shutil
 
 runHydroParameters = {
     'ecm'              :  2760,      # collision energy (GeV): 7.7, 11.5, 19.6, 27, 39, 62.4, 200, 2760
-    'mode'             :  'hydro_search',   #the simulation type:  hydro[default], hybrid, hybrid_search: directly fit and run in hybrid mode on chosen centrality
+    'mode'             :  'hydro_search',   #the simulation type:  hydro[default], hybrid, hybrid_search; hydro_search, hybrid_usePrecalculated
     'model'            :  'MCGlb',   #initial condition model:  MCGlb[default], MCKLN
     'vis'              :  0.08,      #the specific shear viscosity used in the hydro simulation eta/s = 0.08 [default]
     'Tdec'             :  0.155,      #the decoupling temperature (GeV) used in the hydro simulation Tdec = 0.12 GeV [default]
