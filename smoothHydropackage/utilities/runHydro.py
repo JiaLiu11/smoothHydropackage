@@ -706,6 +706,102 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
     shutil.copy(path.join(rootDir, err_record_file_name), 
         path.join(results_folder_path))
 
+
+def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
+               tau0, VisBulkNorm, eos_name, chosen_centrality, pre_eq):
+    """
+    Shell for parameter search mode simulation in pure hydro. 
+    Save v2 data from fit_hydro, and run v3 in pure hydro mode without iS.
+    """
+    initial_path = path.join(rootDir, 'RESULTS/initial_conditions')
+    hydro_path = path.join(rootDir, 'VISHNew')
+    iS_path = path.join(rootDir, 'iS')
+    iS_results_path  = path.join(rootDir, 'iS', 'results')
+
+    run_record_file_name = 'run_record_hydro_search.dat'
+    err_record_file_name = 'err_record_hydro_search.dat'
+    run_record = open(path.join(rootDir, run_record_file_name), 'w+')
+    err_record = open(path.join(rootDir, err_record_file_name), 'w+')
+
+    # prepare data backup folder for v2
+    flow_order = 2
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
+                        eos_name, flow_order))
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    if path.exists(results_folder_path):
+        shutil.rmtree(results_folder_path)
+    makedirs(results_folder_path)
+    # save v2 data - only hydro output
+    worth_storing = []
+    for aGlob in ['surface.dat', 'dec*.dat', 'ecc*.dat', 'VISH2p1_tec.dat']:
+        worth_storing.extend(glob(path.join(iS_results_path, aGlob)))
+    for aFile in glob(path.join(iS_results_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, results_folder_path)
+
+
+    # run hydro for v3
+    flow_order = 3
+    print "Start to search v3:"
+    hydro_initial_path = path.join(hydro_path, 'Initial')
+    cleanUpFolder(hydro_initial_path)
+    # run pre-equilibrium
+    if(pre_eq == True):
+        run_pre_eq(initial_path, chosen_centrality, run_record, err_record, tau0, flow_order)
+        for aFile in glob(path.join(rootDir, 'fs/data/result/event_1/%g'%tau0, '*')):
+            shutil.move(aFile, hydro_initial_path)
+    else:
+        shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path, flow_order, chosen_centrality),
+                    path.join(hydro_path, 'Initial', 'InitialSd.dat'))
+
+    # hydro
+    hydro_results_path = path.join(hydro_path, 'results')
+    if path.exists(path.join(hydro_results_path)):
+        shutil.rmtree(hydro_results_path)
+    makedirs(hydro_results_path)
+    cmd = './VISHNew.e'
+    if(pre_eq == True):
+        args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
+    else:
+        args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
+                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
+
+    print "%s : %s" % (chosen_centrality, cmd + args)
+    sys.stdout.flush()
+    run_record.write(cmd + args)
+    p = subprocess.Popen(cmd + args, shell=True, stdout=run_record,
+                         stderr=err_record, cwd=hydro_path)
+    p.wait()
+
+    # prepare data backup folder for v3
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm, 
+                        eos_name, flow_order))
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    if path.exists(results_folder_path):
+        shutil.rmtree(results_folder_path)
+    makedirs(results_folder_path)
+    # save v3 data
+    worth_storing = []
+    for aGlob in ['surface.dat', 'dec*.dat', 'ecc*.dat', 'VISH2p1_tec.dat']:
+        worth_storing.extend(glob(path.join(hydro_results_path, aGlob)))
+    for aFile in glob(path.join(hydro_results_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, results_folder_path)
+
+    # clean up 
+    run_record.close()
+    err_record.close()
+    shutil.copy(path.join(rootDir, run_record_file_name), 
+        path.join(results_folder_path))
+    shutil.copy(path.join(rootDir, err_record_file_name), 
+        path.join(results_folder_path))
+
+
 def set_eos(eos_name, tdec):
     """
     This function replace the EOS for the whole simulation
@@ -912,7 +1008,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos
     if fit_flag:
         print "fitting the overall normalization factor ..."
         norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
-        if mode == "hybrid_search":
+        if mode == "hybrid_search" or mode == "hydro_search":
             norm_factor = fit_hydro(dN_deta, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess, chosen_centrality) # directly fit hydro at 10-20% centrality
         else:
             norm_factor = fit_hydro(dN_deta, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess)
@@ -930,6 +1026,10 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos
         print "running hybrid search simulations for centrality bin(s): %s..."%chosen_centrality
         run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
                    eos_name, chosen_centrality, pre_eq, parallel_mode)
+    elif mode =="hydro_search":
+        print "running pure hydro search simulations for centrality bin(s): %s..."%chosen_centrality
+        run_hydro_search(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
+                   eos_name, chosen_centrality, pre_eq)        
     else:
         print sys.argv[0], ': invalid running mode', mode
         sys.exit(1)
@@ -1094,17 +1194,17 @@ if __name__ == "__main__":
         dN_deta = 312.5 * np.log10(ecm) - 64.8
     elif ecm_string in dn_deta_dict.keys():
         dN_deta = dn_deta_dict[ecm_string]
-        if mode=='hybrid_search':
+        if mode=='hybrid_search' or mode =='hydro_search':
             if ecm_string=='2760.0':
                 dN_deta = dn_deta_ECM2760_dict[chosen_centrality]
             else:
-                print 'Mode hybrid_search is currently not supported for %s GeV'%ecm_string
+                print 'Mode hybrid_search/hydro_search is currently not supported for %s GeV'%ecm_string
                 sys.exit(0)
     else:
         print sys.argv[0], ': invalid collision energy', ecm
         sys.exit(1)
 
-    if mode in ['hydro', 'hybrid', 'hybrid_search']:
+    if mode in ['hydro', 'hybrid', 'hybrid_search', 'hydro_search']:
         run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos_name,
                         cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
                         parallel_mode)
