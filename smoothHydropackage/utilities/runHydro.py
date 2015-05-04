@@ -680,7 +680,7 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
         if aFile in worth_storing:
             shutil.copy(aFile, results_folder_path)
     run_afterBurner(iS_results_path, chosen_centrality, run_record, err_record,
-        results_folder_path)
+        results_folder_path, parallel_mode)
     # collect db and backup v2 search result
     collectObservables(result_folder, parallel_mode)
     moveDB(result_folder, model, pre_eq)
@@ -746,7 +746,8 @@ def set_eos(eos_name, tdec):
 
 
 
-def run_afterBurner(input_folder, cen_string, run_record, err_record, results_folder_path):
+def run_afterBurner(input_folder, cen_string, run_record, err_record, results_folder_path,
+                    parallel_mode):
     """
     run iSS + osc2u + urqmd once iS or hydro is finished.
     """
