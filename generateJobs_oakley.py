@@ -121,6 +121,7 @@ for i in range(1, numberOfJobs+1):
 #PBS -l nodes=1:ppn=10
 #PBS -S /bin/bash
 module load python/2.7.1 # for osc oakley cluster
+module load hdf5-serial
 cd %s
 (cd %s
     ulimit -n 1000
