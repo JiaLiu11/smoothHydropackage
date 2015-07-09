@@ -102,10 +102,17 @@ crankFolderName = "crank"
 crankFolder = path.join(smoothHydropackageFolder, crankFolderName)
 utilitiesFolderName = "utilities"
 utilitiesFolder = utilitiesFolderName
+copy("runHydro_shell.py", 
+    path.join(resultsFolder, 'runHydro_shell_afterBurner.py'))
 
 # duplicate smoothHydroPackage folder to working directory, write .pbs file
 for i in range(1, numberOfJobs+1):
     targetWorkingFolder = path.join(workingFolder, "node%d" % i)
+    if not path.isdir(path.join(targetWorkingFolder, utilitiesFolder)):
+        print "Folder %s does not exist, continue to next folder"%targetWorkingFolder
+        continue
+    # rewrite run hydro shell script
+    copy("runHydro_shell.py", path.join(targetWorkingFolder, utilitiesFolder))
     # regenerate pbs script
     open(path.join(targetWorkingFolder, "node%d.pbs" % i), "w").write(
 """
