@@ -810,14 +810,14 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
     Divert VISHNew input to iSS and start urqmd thereafter.
     This part runs in parallel mode.
     """
-    run_record_file_name = 'run_record_hybrid_search.dat'
-    err_record_file_name = 'err_record_hybrid_search.dat'
+    run_record_file_name = 'run_record_usePrecalculated_search.dat'
+    err_record_file_name = 'err_record_usePrecalculated_search.dat'
     run_record = open(path.join(rootDir, run_record_file_name), 'w+')
     err_record = open(path.join(rootDir, err_record_file_name), 'w+')
 
     # run after burner for v2
     flow_order = 2
-    print "Start to search v3:"
+    print "Start to search v2:"
     result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
                      % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
                         eos_name, flow_order))
