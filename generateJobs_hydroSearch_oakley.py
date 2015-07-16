@@ -51,7 +51,7 @@ except:
 # save config files
 open("saved_configs.py", "w").writelines("""
 smoothHydropackageConfigs = {
-    "number_of_jobs"            :   %d,
+    "number_of_jobs"            :   "%d",
     "working_folder"            :   "%s",
     "results_folder"            :   "%s",
     "walltime"                  :   "%s",

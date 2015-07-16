@@ -7,6 +7,8 @@ import numpy as np
 from glob import glob
 import shutil
 
+total_nodes = 16
+
 runHydroParameters = {
     'ecm'              :  2760,      # collision energy (GeV): 7.7, 11.5, 19.6, 27, 39, 62.4, 200, 2760
     'mode'             :  'hydro_search',   #the simulation type:  hydro[default], hybrid, hybrid_search; hydro_search, hybrid_usePrecalculated
@@ -94,12 +96,12 @@ def runHydro_shell():
     print executableString
     run(executableString, cwd=path.abspath("./"))
 
-def runHydro_paramSearch():
+def runHydro_paramSearch(number_of_nodes):
     """
         Automatically detect the node name, extract the parameter combinations 
         for current node, and run parameter search.
     """
-    number_of_nodes = len(glob(path.join('../../', 'node*')))
+    #number_of_nodes = len(glob(path.join('../../', 'node*')))
     params_currentNode = splitParameterTable('../tables/params_list.dat',
                                              number_of_nodes)
     if params_currentNode.ndim==1: # only one line
@@ -124,5 +126,5 @@ def runHydro_paramSearch():
 
 
 if __name__ == "__main__":
-    runHydro_paramSearch()
+    runHydro_paramSearch(total_nodes)
     #runHydro_shell()

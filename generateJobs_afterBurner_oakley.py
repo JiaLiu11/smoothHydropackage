@@ -113,6 +113,8 @@ for i in range(1, numberOfJobs+1):
         continue
     # rewrite run hydro shell script
     copy("runHydro_shell.py", path.join(targetWorkingFolder, utilitiesFolder))
+    copy(path.join(smoothHydropackageFolder, utilitiesFolder, 'runHydro.py'),
+          path.join(targetWorkingFolder, utilitiesFolder))
     # regenerate pbs script
     open(path.join(targetWorkingFolder, "node%d.pbs" % i), "w").write(
 """
@@ -126,14 +128,15 @@ for i in range(1, numberOfJobs+1):
 module load python/2.7.1 # for osc oakley cluster
 module load hdf5-serial
 cp -r %s $TMPDIR
-cd $TMPDIR
+cd $TMPDIR/node%d
 (   cd %s
     ulimit -n 1000
     python runHydro_shell.py 1> RunRecord.txt 2> ErrorRecord.txt
     cp RunRecord.txt ErrorRecord.txt ../RESULTS/
 )
 mv ./RESULTS %s/node%d
-""" % (i, walltime, targetWorkingFolder, utilitiesFolder, resultsFolder, i)
+""" % (i, walltime, targetWorkingFolder, i,
+        utilitiesFolder, resultsFolder, i)
     )
     if compressResultsFolderAnswer == "yes":
         open(path.join(targetWorkingFolder, "node%d.pbs" % i), "a").write(
