@@ -281,7 +281,7 @@ def collectObservables(result_folder, parallel_mode):
     if path.exists(path.join(ebeCollector_folder, 'event-1')):
         shutil.rmtree(path.join(ebeCollector_folder, 'event-1'))
     makedirs(path.join(ebeCollector_folder, 'event-1'))
-    print "collectMoveDB"+"="*20+'\n'
+    print "collectMoveDB"+"="*20
     for aFile in particle_list_files:
         shutil.move(aFile, path.join(ebeCollector_folder, 'event-1'))
     # start to collect database --> from particle_list to particles.db
@@ -825,11 +825,17 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
     if not path.exists(results_folder_path):
         print "run_hybrid_search_precalculated: no folder %s!"%result_folder
 
-    run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
-        results_folder_path, parallel_mode)
-    # collect db and backup v2 search result
-    collectObservables(result_folder, parallel_mode)
-    moveDB(result_folder, model, pre_eq)
+    # check if result already exists
+    backup_file = path.join(project_directory, '%s_%d'%(model, pre_eq),
+        result_folder+'.zip')
+    if path.isfile(backup_file):
+        print 'skip current run because result already exists!'
+    else:
+        run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
+            results_folder_path, parallel_mode)
+        # collect db and backup v2 search result
+        collectObservables(result_folder, parallel_mode)
+        moveDB(result_folder, model, pre_eq)
 
     # run the search for v3
     flow_order = 3
@@ -841,11 +847,17 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
     if not path.exists(results_folder_path):
         print "run_hybrid_search_precalculated: no folder %s!"%result_folder
 
-    run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
-        results_folder_path, parallel_mode)
-    # collect db and backup v3 search result
-    collectObservables(result_folder, parallel_mode)
-    moveDB(result_folder, model, pre_eq)
+    # check if result already exists
+    backup_file = path.join(project_directory, '%s_%d'%(model, pre_eq),
+        result_folder+'.zip')
+    if path.isfile(backup_file):
+        print 'skip current run because result already exists!'
+    else:
+        run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
+            results_folder_path, parallel_mode)
+        # collect db and backup v3 search result
+        collectObservables(result_folder, parallel_mode)
+        moveDB(result_folder, model, pre_eq)
 
     run_record.close()
     err_record.close()
