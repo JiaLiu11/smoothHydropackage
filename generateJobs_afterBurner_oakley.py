@@ -125,8 +125,9 @@ for i in range(1, numberOfJobs+1):
 #PBS -S /bin/bash
 module load python/2.7.1 # for osc oakley cluster
 module load hdf5-serial
-cd %s
-(cd %s
+cp -r %s $TMPDIR
+cd $TMPDIR
+(   cd %s
     ulimit -n 1000
     python runHydro_shell.py 1> RunRecord.txt 2> ErrorRecord.txt
     cp RunRecord.txt ErrorRecord.txt ../RESULTS/
