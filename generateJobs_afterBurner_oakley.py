@@ -131,12 +131,13 @@ cp -r %s $TMPDIR
 cd $TMPDIR/node%d
 (   cd %s
     ulimit -n 1000
-    python runHydro_shell.py 1> RunRecord.txt 2> ErrorRecord.txt
-    cp RunRecord.txt ErrorRecord.txt ../RESULTS/
+    python runHydro_shell.py 1> %s/RunRecord.txt 2> %s/ErrorRecord.txt
 )
 mv ./RESULTS %s/node%d
-""" % (i, walltime, targetWorkingFolder, i,
-        utilitiesFolder, resultsFolder, i)
+""" % (i, walltime, targetWorkingFolder, i, utilitiesFolder, 
+        path.join(targetWorkingFolder, utilitiesFolder),
+        path.join(targetWorkingFolder, utilitiesFolder),
+        resultsFolder, i)
     )
     if compressResultsFolderAnswer == "yes":
         open(path.join(targetWorkingFolder, "node%d.pbs" % i), "a").write(
