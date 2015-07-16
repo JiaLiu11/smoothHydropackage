@@ -822,15 +822,16 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
                      % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
                         eos_name, flow_order))
     results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
-    if not path.exists(results_folder_path):
-        print "run_hybrid_search_precalculated: no folder %s!"%result_folder
 
     # check if result already exists
     backup_file = path.join(project_directory, '%s_%d'%(model, pre_eq),
         result_folder+'.zip')
     if path.isfile(backup_file):
-        print 'skip current run because result already exists!'
+        print 'skip current run because result already exists!\n'
     else:
+        if not path.exists(results_folder_path):
+            print "run_hybrid_search_precalculated: no folder %s!"%result_folder
+            sys.exit(-1)
         run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
             results_folder_path, parallel_mode)
         # collect db and backup v2 search result
@@ -844,15 +845,16 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
                      % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
                         eos_name, flow_order))
     results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
-    if not path.exists(results_folder_path):
-        print "run_hybrid_search_precalculated: no folder %s!"%result_folder
 
     # check if result already exists
     backup_file = path.join(project_directory, '%s_%d'%(model, pre_eq),
         result_folder+'.zip')
     if path.isfile(backup_file):
-        print 'skip current run because result already exists!'
+        print 'skip current run because result already exists!\n'
     else:
+        if not path.exists(results_folder_path):
+            print "run_hybrid_search_precalculated: no folder %s!"%result_folder
+            sys.exit(-1)
         run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
             results_folder_path, parallel_mode)
         # collect db and backup v3 search result
