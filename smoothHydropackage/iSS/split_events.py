@@ -19,7 +19,7 @@ except(IOError):
 in_file = open(original_file, 'r')
 out_file_list = []
 for ifile in range(number_of_split):
-    temp_file = open(original_file.split('.')[0] + "_%d.dat" % ifile, 'w')
+    temp_file = open(original_file.split('/')[-1].split('.')[0] + "_%d.dat" % ifile, 'w')
     out_file_list.append(temp_file)
 
 # header
