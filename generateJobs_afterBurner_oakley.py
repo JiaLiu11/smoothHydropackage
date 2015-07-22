@@ -133,10 +133,14 @@ cd $TMPDIR/node%d
     ulimit -n 1000
     python runHydro_shell.py 1> %s/RunRecord.txt 2> %s/ErrorRecord.txt
 )
+mv ./param_search_log_v2.dat %s
+mv ./param_search_log_v3.dat %s
+
 mv ./RESULTS %s/node%d
 """ % (i, walltime, targetWorkingFolder, i, utilitiesFolder, 
         path.join(targetWorkingFolder, utilitiesFolder),
         path.join(targetWorkingFolder, utilitiesFolder),
+        targetWorkingFolder, targetWorkingFolder,
         resultsFolder, i)
     )
     if compressResultsFolderAnswer == "yes":
