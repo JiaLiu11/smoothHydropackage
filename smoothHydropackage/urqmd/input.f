@@ -428,7 +428,9 @@ c	parameters: 2: energie
 c		    3: 1 =solid		
 c		    4: 1 = walls
         elseif(flag.eq.'box') then          
-           boxflag=boxflag+1                     
+          if(CTOption(40).eq.0) then
+           boxflag=boxflag+1
+          endif
           read(inputstr,fmt=*,err=88,end=88) lbox,edens,solid,para
 	   if (edens.gt.0.d0) edensflag=1
 		
