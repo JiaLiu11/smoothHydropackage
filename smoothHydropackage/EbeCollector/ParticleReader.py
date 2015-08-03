@@ -4,6 +4,7 @@ from sys import argv, exit
 from os import path
 from DBR import SqliteDB
 from numpy import *
+import math
 
 # define colors
 purple = "\033[95m"
@@ -46,6 +47,7 @@ class ParticleReader(object):
 
         # setup lookup tables
         self.pid_lookup = dict(self.db.selectFromTable("pid_lookup"))
+        self.pid_Mass = dict(self.db.selectFromTable("pid_Mass"))
 
         # define all charged hadrons
         self.charged_hadron_list = [
@@ -1013,11 +1015,72 @@ class ParticleReader(object):
                                             (pid, mean_pT_value, mean_pT_error))
         self.analyzed_db._dbCon.commit()  # commit changes
 
+    def rapToPseudorap(self, mass, pT, rap):
+        """
+            Convert rapidity to pseudo rapidity
+        """
+        mT = sqrt(pT**2.0+mass**2.0)
+        pseudoRap = 0.5*log(sqrt(mT**2.0*cosh(rap)**2.0-mass**2.0)+mT*sinh(rap))-0.5*log(sqrt(mT**2.0*cosh(rap)**2.0-mass**2.0)-mT*sinh(rap))
+        return pseudoRap
+
+    def duplicateChargedParticles(self, etas_low, etas_high, etas_dis):
+        """
+            This functioin duplicates charged particles to other spatial rapidity region
+            while keep the y-eta_s unchanged.
+        """
+        # get pid
+        particle_name = 'charged'
+        pid_string = self.getPidString(particle_name)
+        # check whether the data are already collected
+        try_data = array(self.db.executeSQLquery(
+                "select eta from particle_list where "
+                "hydroEvent_id = %d and UrQMDEvent_id = %d and "
+                "%s" % (1, 1, pid_string)).fetchall())
+        if try_data.size ==0:
+            exit("duplicateChargedParticles: No %s particle data is collected!"%particle_name)
+        # get data
+        print 'Duplicate %s data to eta region (%g, %g) and (%g, %g)'%(particle_name, etas_low-etas_dis, etas_low,
+                                                                        etas_high, etas_high+etas_dis)    
+
+        # create tables
+        self.analyzed_db.createTableIfNotExists("particle_list", (("hydroEvent_id","integer"), ("UrQMDEvent_id","interger"), ("pid","integer"), ("tau","real"), ("x","real"), ("y","real"), ("eta","real"), ("pT", "real"), ("phi_p", "real"), ("rapidity", "real"), ("pseudorapidity", "real")))
+        # loop over particles
+        for aParticle in self.charged_hadron_list:
+            pid = self.pid_lookup[aParticle]
+            mass = self.pid_Mass[aParticle]
+            original_data_cursor = self.db.executeSQLquery(
+                    "select * from particle_list where "
+                    "%g < eta and eta < %g and "
+                    "pid = %s" %(etas_low, etas_high, pid))
+            while True:
+                results = array(original_data_cursor.fetchmany(1000))
+                if results.size == 0:
+                    break
+                else:
+                    self.analyzed_db.insertIntoTable("particle_list", list(results))
+                    # fill the etas_low-etas_dis to etas_low
+                    lower_etas_data = results.copy()
+                    lower_etas_data[:, 6] = lower_etas_data[:,6]-etas_dis # spatial rapidity
+                    lower_etas_data[:, 9] = lower_etas_data[:,9]-etas_dis # rapidity 
+                    lower_etas_data[:, 10] = self.rapToPseudorap(mass, lower_etas_data[:, 7], lower_etas_data[:, 9]) # pseudorapidity
+                    self.analyzed_db.insertIntoTable("particle_list", list(lower_etas_data))
+                    # fill the etas_high to etas_low+etas_dis
+                    higher_etas_data = results.copy()
+                    higher_etas_data[:, 6] = higher_etas_data[:,6]+etas_dis
+                    higher_etas_data[:, 9] = higher_etas_data[:,9]+etas_dis
+                    higher_etas_data[:, 10] = self.rapToPseudorap(mass, higher_etas_data[:, 7], higher_etas_data[:, 9])                   
+                    self.analyzed_db.insertIntoTable("particle_list", list(higher_etas_data))
+        # close connection to commit changes
+        self.analyzed_db.closeConnection()
+        print "Duplication completes!"
+
     ###########################################################################
     # functions to collect two particle correlation
     ########################################################################### 
 
     def generateAnalyzedDatabase(self):
+        # duplicate charged particles
+        self.duplicateChargedParticles(-1., 1., 2.)
         self.collect_particle_spectra("charged", rap_type='rapidity')
         self.collect_particle_spectra("charged", rap_type='pseudorapidity')
         self.collect_particle_yield_vs_rap("charged",
@@ -1031,7 +1094,7 @@ class ParticleReader(object):
             self.collect_flow_Qn_vectors(aPart)
             self.collect_particle_meanPT(aPart)
 
-        #self.collect_flow_Qn_vectors_for_mergedHaron()
+        self.collect_flow_Qn_vectors_for_mergedHaron()
 
     def mergeAnalyzedDatabases(self, toDB, fromDB):
         """
