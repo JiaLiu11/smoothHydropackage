@@ -271,6 +271,115 @@ class ParticleReader(object):
                         )
         self.analyzed_db._dbCon.commit()  # commit changes
 
+
+    def collect_chargedParticle_spectra(self, rap_range = [-2.5, 2.5], rap_type = 'pseudorapidity'):
+        """
+           collect charged particle dN/dyptdptdphi from duplicated table
+        """
+        particle_name = 'charged'
+        pid = self.pid_lookup[particle_name]
+        pid_string = self.getPidString(particle_name)
+        analyzed_table_name = 'particle_dNdyptdptdphi'
+
+        # check if data exists
+        try_data = array(self.analyzed_db.executeSQLquery(
+            "select eta from particle_list "
+            "where hydroEvent_id=1 and UrQMDEvent_id=1 "
+            "and %s"%pid_string).fetchmany(10))
+        if try_data.size == 0:
+            print "collect_chargedParticle_spectra: no duplicated charged hadron data!"
+            return
+
+        # check whether the data are already collected
+        collected_flag = True
+        if self.analyzed_db.createTableIfNotExists(analyzed_table_name,
+                                                   (('hydro_event_id','integer'), 
+                                                    ('urqmd_event_id','integer'),
+                                                    ('pid', 'integer'),
+                                                    ('pT', 'real'),
+                                                    ('phi_p','real'),
+                                                    ('dNdyptdptdphi', 'real'))):
+            collected_flag = False
+        else:
+            try_data = array(self.analyzed_db.executeSQLquery(
+                "select pT, dNdyptdptdphi from %s where "
+                "hydro_event_id = %d and urqmd_event_id = %d and "
+                "pid = %d" % (analyzed_table_name, 1, 1, pid)).fetchmany(10))
+            if try_data.size == 0: collected_flag = False
+        # always rewrite old data
+        if collected_flag:
+            print("particle spectra of %s has already been collected!"
+                  % particle_name)
+            print("Delete old table and collect data again!")
+            self.analyzed_db.executeSQLquery("delete from %s "
+                                             "where pid = %d" % (
+                                                 analyzed_table_name, pid))
+
+        print("collect particle spectra of %s ..." % particle_name)
+        for hydroId in range(1, self.hydroNev + 1):
+            print "start to collect hydro event %d:"%hydroId
+            urqmd_nev = self.db.executeSQLquery(
+                "select Number_of_UrQMDevents from UrQMD_NevList where "
+                "hydroEventId = %d " % hydroId).fetchall()[0][0]
+            for urqmdId in range(1, urqmd_nev + 1):
+                #set pT bin boundaries
+                npT = 30
+                pT_boundaries = linspace(0, 3, npT + 1)
+                dpT = pT_boundaries[1] - pT_boundaries[0]
+                pT_avg = (pT_boundaries[0:-1] + pT_boundaries[1:]) / 2.
+                #set phip boundaries
+                nphip = 48
+                phip_boundaries = linspace(0, 2*pi, nphip+1)
+                dphip = phip_boundaries[1] - phip_boundaries[0]
+                phip_avg = (phip_boundaries[0:-1] + phip_boundaries[1:]) / 2.
+                #initialize temp result table
+                dndyptdptdphi_table = zeros((npT*nphip,3))
+                dndyptdptdphi_table[:,0] = repeat(pT_avg, len(phip_avg))
+                dndyptdptdphi_table[:,1] = tile(phip_avg, len(pT_avg))
+                #fetch data from the database
+                data = array(self.analyzed_db.executeSQLquery(
+                    "select pT, phi_p from particle_list where hydroEvent_id = %d and "
+                    "UrQMDEvent_id = %d and (%s) and (%g <= %s and %s <= %g)"
+                    % (hydroId, urqmdId, pid_string, rap_range[0], rap_type,
+                       rap_type, rap_range[1])).fetchall())
+                #bin data
+                icounter = 0
+                if data.size !=0:
+                    for ipT in range(len(pT_boundaries) - 1):
+                        pT_low = pT_boundaries[ipT]
+                        pT_high = pT_boundaries[ipT + 1]
+                        pt_data = data[(data[:, 0]>pT_low) & (data[:, 0]<pT_high),:]
+                        if pt_data.size != 0:
+                            for iphip in range(len(phip_boundaries)-1):
+                                phip_low = phip_boundaries[iphip]
+                                phip_high = phip_boundaries[iphip+1]
+                                ptphip_data = pt_data[(pt_data[:, 1]>phip_low) & (pt_data[:, 1]<phip_high),:]
+                                if ptphip_data.size !=0:
+                                    pT_avg_now = mean(ptphip_data[:,0])
+                                    phip_avg_now = mean(ptphip_data[:,1])
+                                    if ptphip_data.ndim == 1:
+                                        particle_count = 1
+                                    else:
+                                        particle_count = len(ptphip_data)
+                                    dndyptdptdphi_now = particle_count/pT_avg_now/dpT/dphip
+                                    dndyptdptdphi_table[icounter, 0] = pT_avg_now
+                                    dndyptdptdphi_table[icounter, 1] = phip_avg_now
+                                    dndyptdptdphi_table[icounter, 2] = dndyptdptdphi_now
+                                icounter += 1
+                        icounter += 1
+                for item in range(npT*nphip):
+                    self.analyzed_db.insertIntoTable(
+                        analyzed_table_name,
+                        (hydroId, urqmdId, pid, 
+                         dndyptdptdphi_table[item, 0],
+                         dndyptdptdphi_table[item, 1],
+                         dndyptdptdphi_table[item, 2])
+                    )
+                print "UrQMD event %d finished!"%urqmdId
+        self.analyzed_db._dbCon.commit()  # commit changes
+        print "dndyptdptdphi of %s particle table collected!"% particle_name
+
+
     def collect_basic_particle_spectra(self):
         """
             collect particle spectra into database for commonly interested 
@@ -1081,6 +1190,9 @@ class ParticleReader(object):
     def generateAnalyzedDatabase(self):
         # duplicate charged particles
         self.duplicateChargedParticles(-1., 1., 2.)
+        self.collect_chargedParticle_spectra(rap_range = [-2.5, 2.5],rap_type = 'pseudorapidity')
+        self.analyzed_db.dropTable('particle_list') # delete duplicate table
+
         self.collect_particle_spectra("charged", rap_type='rapidity')
         self.collect_particle_spectra("charged", rap_type='pseudorapidity')
         self.collect_particle_yield_vs_rap("charged",
@@ -1094,7 +1206,7 @@ class ParticleReader(object):
             self.collect_flow_Qn_vectors(aPart)
             self.collect_particle_meanPT(aPart)
 
-        self.collect_flow_Qn_vectors_for_mergedHaron()
+        # self.collect_flow_Qn_vectors_for_mergedHaron()
 
     def mergeAnalyzedDatabases(self, toDB, fromDB):
         """
