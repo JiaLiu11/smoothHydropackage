@@ -3,7 +3,6 @@
 tim 8000  8000
 #     
 ctp 22 1.0
-box 20 100000 0 0
 # 
 #    random seed (only needed for error back-tracing)
 #rsd 1944955121
