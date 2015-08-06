@@ -343,30 +343,34 @@ class ParticleReader(object):
                     % (hydroId, urqmdId, pid_string, rap_range[0], rap_type,
                        rap_type, rap_range[1])).fetchall())
                 #bin data
-                icounter = 0
-                if data.size !=0:
-                    for ipT in range(len(pT_boundaries) - 1):
-                        pT_low = pT_boundaries[ipT]
-                        pT_high = pT_boundaries[ipT + 1]
-                        pt_data = data[(data[:, 0]>pT_low) & (data[:, 0]<pT_high),:]
-                        if pt_data.size != 0:
-                            for iphip in range(len(phip_boundaries)-1):
-                                phip_low = phip_boundaries[iphip]
-                                phip_high = phip_boundaries[iphip+1]
-                                ptphip_data = pt_data[(pt_data[:, 1]>phip_low) & (pt_data[:, 1]<phip_high),:]
-                                if ptphip_data.size !=0:
-                                    pT_avg_now = mean(ptphip_data[:,0])
-                                    phip_avg_now = mean(ptphip_data[:,1])
-                                    if ptphip_data.ndim == 1:
-                                        particle_count = 1
-                                    else:
-                                        particle_count = ptphip_data.shape[0]
-                                    dndyptdptdphi_now = particle_count/pT_avg_now/dpT/dphip
-                                    dndyptdptdphi_table[icounter, 0] = pT_avg_now
-                                    dndyptdptdphi_table[icounter, 1] = phip_avg_now
-                                    dndyptdptdphi_table[icounter, 2] = dndyptdptdphi_now
-                                icounter += 1
-                        icounter += 1
+                # icounter = 0
+                # if data.size !=0:
+                #     for ipT in range(len(pT_boundaries) - 1):
+                #         pT_low = pT_boundaries[ipT]
+                #         pT_high = pT_boundaries[ipT + 1]
+                #         pt_data = data[(data[:, 0]>pT_low) & (data[:, 0]<pT_high),:]
+                #         if pt_data.size != 0:
+                #             for iphip in range(len(phip_boundaries)-1):
+                #                 phip_low = phip_boundaries[iphip]
+                #                 phip_high = phip_boundaries[iphip+1]
+                #                 ptphip_data = pt_data[(pt_data[:, 1]>phip_low) & (pt_data[:, 1]<phip_high),:]
+                #                 if ptphip_data.size !=0:
+                #                     pT_avg_now = mean(ptphip_data[:,0])
+                #                     phip_avg_now = mean(ptphip_data[:,1])
+                #                     if ptphip_data.ndim == 1:
+                #                         particle_count = 1
+                #                     else:
+                #                         particle_count = ptphip_data.shape[0]
+                #                     dndyptdptdphi_now = particle_count/pT_avg_now/dpT/dphip
+                #                     dndyptdptdphi_table[icounter, 0] = pT_avg_now
+                #                     dndyptdptdphi_table[icounter, 1] = phip_avg_now
+                #                     dndyptdptdphi_table[icounter, 2] = dndyptdptdphi_now
+                #                 icounter += 1
+                #         icounter += 1
+                hist, pT_boundaries, phip_boundaries = histogram2d(data[:,0], data[:,1], bins=(pT_boundaries, phip_boundaries))
+                dndyptdptdphi_table[:,2] = reshape(hist, hist.size)/dndyptdptdphi_table[:,0]/dpT/dphip
+                # print "particle to collect: %d"%data.shape[0]
+                # print "particle collected: %g"%sum(dndyptdptdphi_table[:,2]*dndyptdptdphi_table[:,0]*dpT*dphip)       
                 for item in range(npT*nphip):
                     self.analyzed_db.insertIntoTable(
                         analyzed_table_name,

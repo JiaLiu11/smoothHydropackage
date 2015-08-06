@@ -391,11 +391,11 @@ class AnalyzedDataReader(object):
 
         #tranform phip from range (-pi, pi) to (0,2*pi)
         data[:,1] = data[:,1]+pi
-        #interpolate data
-        pT_grid, phip_grid = meshgrid(pT_array, phip_array)
-        results = griddata((data[:,0], data[:,1]), data[:,2], (pT_grid, phip_grid), 
-                           method='linear', fill_value=0)
-        return results.transpose()
+        # #interpolate data
+        # pT_grid, phip_grid = meshgrid(pT_array, phip_array)
+        # results = griddata((data[:,0], data[:,1]), data[:,2], (pT_grid, phip_grid), 
+        #                    method='linear', fill_value=0)
+        return reshape(data[:,2], (30, 48))
 
 
     def calculateVnFromSpectra(self, spectra, pT_table, phip_table, order):
@@ -403,24 +403,45 @@ class AnalyzedDataReader(object):
             This function calculate vn given spectra using the same method as iS.
         """  
         #check dimension
-        if not spectra.shape[0]==pT_table.shape[0]:
-            exit("calculateVnFromSpectra: pT dimension does not match! Aborting...")
-        if not spectra.shape[1]==phip_table.shape[0]:
-            exit("calculateVnFromSpectra: phip dimension does not match! Aborting...")
-        pT_value = pT_table[:,0]
-        pT_weight= pT_table[:,1]
-        phip_value = phip_table[:,0]
-        phip_weight= phip_table[:,1]
+        # if not spectra.shape[0]==pT_table.shape[0]:
+        #     exit("calculateVnFromSpectra: pT dimension does not match! Aborting...")
+        # if not spectra.shape[1]==phip_table.shape[0]:
+        #     exit("calculateVnFromSpectra: phip dimension does not match! Aborting...")
+        # pT_value = pT_table[:,0]
+        # pT_weight= pT_table[:,1]
+        # phip_value = phip_table[:,0]
+        # phip_weight= phip_table[:,1]
         #integrate alone phip
-        phip_value_mat = tile(phip_value.reshape((1, len(phip_value))), (len(pT_value),1))
-        phip_weight_mat= tile(phip_weight.reshape((1, len(phip_weight))), (len(pT_value),1))
-        vn_diff_real_numerator = (spectra * phip_weight_mat * cos(order*phip_value_mat)).sum(axis=1)
-        vn_diff_img_numerator  = (spectra * phip_weight_mat * sin(order*phip_value_mat)).sum(axis=1)
-        normalization_diff = (spectra*phip_weight_mat).sum(axis=1)
+        # phip_value_mat = tile(phip_value.reshape((1, len(phip_value))), (len(pT_value),1))
+        # phip_weight_mat= tile(phip_weight.reshape((1, len(phip_weight))), (len(pT_value),1))
+        # vn_diff_real_numerator = (spectra * phip_weight_mat * cos(order*phip_value_mat)).sum(axis=1)
+        # vn_diff_img_numerator  = (spectra * phip_weight_mat * sin(order*phip_value_mat)).sum(axis=1)
+        # pT_avg = (pT_boundaries[0:-1] + pT_boundaries[1:]) / 2.
+        # normalizationi = sum(normalization_diff*pT_value*pT_weight)
+        # vn_real = sum(vn_diff_real_numerator*pT_value*pT_weight)/(normalizationi+1e-18)
+        # vn_img  = sum(vn_diff_img_numerator*pT_value*pT_weight)/(normalizationi+1e-18)
+        #integrate along phip
+        nphip = 48
+        phip_boundaries = linspace(-pi, pi, nphip+1)
+        dphip = phip_boundaries[1] - phip_boundaries[0]
+        phip_avg = (phip_boundaries[0:-1] + phip_boundaries[1:]) / 2.
+        vn_diff_real_numerator = (spectra * dphip * cos(order*phip_avg)).sum(axis=1)
+        vn_diff_img_numerator  = (spectra * dphip * sin(order*phip_avg)).sum(axis=1)
+        normalization_diff = (spectra*dphip).sum(axis=1)
         #integrate alone pT
-        normalizationi = sum(normalization_diff*pT_value*pT_weight)
-        vn_real = sum(vn_diff_real_numerator*pT_value*pT_weight)/(normalizationi+1e-18)
-        vn_img  = sum(vn_diff_img_numerator*pT_value*pT_weight)/(normalizationi+1e-18)
+        npT = 30
+        pT_boundaries = linspace(0, 3, npT + 1)
+        dpT = pT_boundaries[1] - pT_boundaries[0]
+        pT_avg = (pT_boundaries[0:-1] + pT_boundaries[1:]) / 2.
+        #interpolate to specified pT range
+        vn_diff_real_numerator_interp = interp(pT_table[:,0], pT_avg, vn_diff_real_numerator)
+        vn_diff_img_numerator_interp  = interp(pT_table[:,0], pT_avg, vn_diff_img_numerator)
+        normalization_diff_interp = interp(pT_table[:,0], pT_avg, normalization_diff)
+        #integrate
+        normalizationi = sum(normalization_diff_interp*pT_table[:,0]*pT_table[:,1])
+        vn_real = sum(vn_diff_real_numerator_interp*pT_table[:,0]*pT_table[:,1])/(normalizationi+1e-18)
+        vn_img  = sum(vn_diff_img_numerator_interp*pT_table[:,0]*pT_table[:,1])/(normalizationi+1e-18)
+        #print "particle number: %g"%normalizationi
         return vn_real, vn_img
 
 
