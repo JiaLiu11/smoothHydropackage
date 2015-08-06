@@ -329,7 +329,7 @@ class ParticleReader(object):
                 pT_avg = (pT_boundaries[0:-1] + pT_boundaries[1:]) / 2.
                 #set phip boundaries
                 nphip = 48
-                phip_boundaries = linspace(0, 2*pi, nphip+1)
+                phip_boundaries = linspace(-pi, pi, nphip+1)
                 dphip = phip_boundaries[1] - phip_boundaries[0]
                 phip_avg = (phip_boundaries[0:-1] + phip_boundaries[1:]) / 2.
                 #initialize temp result table
@@ -360,7 +360,7 @@ class ParticleReader(object):
                                     if ptphip_data.ndim == 1:
                                         particle_count = 1
                                     else:
-                                        particle_count = len(ptphip_data)
+                                        particle_count = ptphip_data.shape[0]
                                     dndyptdptdphi_now = particle_count/pT_avg_now/dpT/dphip
                                     dndyptdptdphi_table[icounter, 0] = pT_avg_now
                                     dndyptdptdphi_table[icounter, 1] = phip_avg_now
