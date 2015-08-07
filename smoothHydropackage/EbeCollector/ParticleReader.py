@@ -384,7 +384,7 @@ class ParticleReader(object):
         print "dndyptdptdphi of %s particle table collected!"% particle_name
 
 
-    def collect_mean_vn(self, order, particle_name = 'charged', 
+    def collect_mean_vn(self, particle_name = 'charged', 
                         rap_range = [-2.5, 2.5], rap_type = 'pseudorapidity'):
         """
            collect particle mean vn for each urqmd event
@@ -392,6 +392,7 @@ class ParticleReader(object):
         pid = self.pid_lookup[particle_name]
         pid_string = self.getPidString(particle_name)
         analyzed_table_name = 'mean_vn'
+        order_list=range(2,7)
 
         # check if data exists
         try_data = array(self.analyzed_db.executeSQLquery(
@@ -406,11 +407,12 @@ class ParticleReader(object):
         collected_flag = True
         if self.analyzed_db.createTableIfNotExists(analyzed_table_name,
                                                    (('hydro_event_id','integer'), 
-                                                    ('urqmd_event_id','integer'),
                                                     ('pid', 'integer'),
                                                     ('n', 'integer'),
                                                     ('vn_real', 'real'),
-                                                    ('vn_imag','real'))):
+                                                    ('vn_real_err', 'real'),
+                                                    ('vn_imag','real'),
+                                                    ('vn_imag_err','real'),)):
             collected_flag = False
         else:
             try_data = array(self.analyzed_db.executeSQLquery(
@@ -428,31 +430,36 @@ class ParticleReader(object):
                                                  analyzed_table_name, pid))
 
         print("collect mean v%d of %s ..." % (order, particle_name))
+        icounter = 0
         for hydroId in range(1, self.hydroNev + 1):
             print "start to collect hydro event %d:"%hydroId
-            urqmd_nev = self.db.executeSQLquery(
-                "select Number_of_UrQMDevents from UrQMD_NevList where "
-                "hydroEventId = %d " % hydroId).fetchall()[0][0]
-            for urqmdId in range(1, urqmd_nev + 1):
-                #fetch data from the database
-                data = array(self.analyzed_db.executeSQLquery(
-                    "select phi_p from particle_list where hydroEvent_id = %d and "
-                    "UrQMDEvent_id = %d and (%s) and (%g <= %s and %s <= %g)"
-                    % (hydroId, urqmdId, pid_string, rap_range[0], rap_type,
-                       rap_type, rap_range[1])).fetchall())
-                if data.size!=0:
-                    particle_number = data.shape[0]
-                    vn_real = sum(cos(order*data[:]))/particle_number
-                    vn_imag  = sum(sin(order*data[:]))/particle_number
-                else:
-                    vn_real, vn_imag, particle_number = 0, 0, 0
+            #fetch data from the database
+            data = array(self.db.executeSQLquery(
+                "select phi_p from particle_list where hydroEvent_id = %d and "
+                "(%s) and (%g <= %s and %s <= %g) and "
+                "(%g <= pT and pT <= %g)"
+                % (hydroId, pid_string, rap_range[0], rap_type,
+                   rap_type, rap_range[1], pT_range[0], pT_range[1])).fetchall())
+            if data.size!=0:
+                particle_total = data.shape[0]
+                for order in order_list:
+                    cos_nphip = cos(order*data[:])
+                    sin_nphip = sin(order*data[:])
+                    vn_real = sum(cos_nphip)/particle_total
+                    vn_real_err  = sqrt(sum(cos_nphip**2.)/particle_total-vn_real**2.)/sqrt(particle_total)
+                    vn_imag = sum(sin_nphip)/particle_total
+                    vn_imag_err  = sqrt(sum(sin_nphip**2.)/particle_total-vn_imag**2.)/sqrt(particle_total)
+                    self.analyzed_db.insertIntoTable(
+                        analyzed_table_name,
+                        (hydroId, pid, order,
+                         vn_real, vn_real_err, vn_imag, vn_imag_err))
+            else:
                 self.analyzed_db.insertIntoTable(
                     analyzed_table_name,
-                    (hydroId, urqmdId, pid, order,
-                     vn_real, vn_imag))
-                print "UrQMD event %d finished!"%urqmdId
+                    (hydroId, pid, 0,
+                     0, 0, 0, 0))
         self.analyzed_db._dbCon.commit()  # commit changes
-        print "mean v%d of %s particle collected!"% (order, particle_name)
+        print "mean vn of %s particle collected!"% (order, particle_name)
 
     def collect_basic_particle_spectra(self):
         """
@@ -1265,7 +1272,7 @@ class ParticleReader(object):
         # duplicate charged particles
         self.duplicateChargedParticles(-1., 1., 2.)
         self.collect_chargedParticle_spectra(rap_range = [-2.5, 2.5],rap_type = 'pseudorapidity')
-        self.collect_mean_vn(order = 2)
+        self.collect_mean_vn()
         self.analyzed_db.dropTable('particle_list') # delete duplicate table
 
         self.collect_particle_spectra("charged", rap_type='rapidity')
