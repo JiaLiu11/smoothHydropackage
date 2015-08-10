@@ -445,7 +445,7 @@ class AnalyzedDataReader(object):
         return vn_real, vn_img
 
 
-    def get_mean_vn(self, order = 2):
+    def get_mean_vn_from_spectra(self, order = 2):
         """
             This function serve as a shell to calculate vn from particle spectra
             for all events
@@ -1100,6 +1100,23 @@ class AnalyzedDataReader(object):
         vn_avg[4] = vn_imag_err / resolutionFactor
 
         return (vn_avg)
+
+    def get_mean_vn_flow(self, particle_name, order):
+        """
+            read mean vn from analyzed data base
+        """
+        print("read mean v%d for %s ... " %(order, particle_name))
+        pid = self.pid_lookup[particle_name]
+
+        analyzed_table_name = 'mean_vn'
+        try:
+            vn_data = self.db.executeSQLquery(
+                "select vn_real, vn_real_err, vn_imag, vn_imag_err from %s "
+                "where pid=%d and n=%d"%(analyzed_table_name, pid, order)).fetchall()
+        except:
+            print "Cannnot read from table %s"%analyzed_table_name
+
+        return array(vn_data[0])
 
 
     def get_particle_meanPT(
@@ -2061,22 +2078,19 @@ if __name__ == "__main__":
     if len(argv) < 2:
         printHelpMessageandQuit()
     test = AnalyzedDataReader(str(argv[1]))
-    test.get_mean_vn(2)
-    # # extract results
-    # v2_ch_array = test.get_intevn_flow('charged', 'scalar_product', 2,
-    #                                 pT_range=(0.2, 3.0))
-    # v3_ch_array = test.get_intevn_flow('charged', 'scalar_product', 3,
-    #                                 pT_range=(0.2, 3.0))
-    # v2_ch_mean = sqrt(v2_ch_array[1]**2 + v2_ch_array[3]**2)
-    # v2_ch_error= sqrt(v2_ch_array[2]**2 + v2_ch_array[4]**2)
-    # v3_ch_mean = sqrt(v3_ch_array[1]**2 + v3_ch_array[3]**2)
-    # v3_ch_error= sqrt(v3_ch_array[2]**2 + v3_ch_array[4]**2)    
-    # results = append([v2_ch_mean, v2_ch_error], [v3_ch_mean, v3_ch_error])
-    # for aParticle in ['pion_p', 'kaon_p', 'proton']:
-    #     meanPT =  test.get_particle_meanPT(aParticle)
-    #     results = append(results, meanPT)
-    # savetxt('paramSearch_result.dat', results[None], 
-    #     fmt='%10.8e', delimiter=' ')
+    # extract results
+    v2_ch_array = test.get_mean_vn_flow(particle_name='charged', order=2)
+    v3_ch_array = test.get_mean_vn_flow(particle_name='charged', order=3)
+    v2_ch_mean = sqrt(v2_ch_array[0]**2 + v2_ch_array[2]**2)
+    v2_ch_error= sqrt(v2_ch_array[1]**2 + v2_ch_array[3]**2)
+    v3_ch_mean = sqrt(v3_ch_array[0]**2 + v3_ch_array[2]**2)
+    v3_ch_error= sqrt(v3_ch_array[1]**2 + v3_ch_array[3]**2)    
+    results = append([v2_ch_mean, v2_ch_error], [v3_ch_mean, v3_ch_error])
+    for aParticle in ['pion_p', 'kaon_p', 'proton']:
+        meanPT =  test.get_particle_meanPT(aParticle)
+        results = append(results, meanPT)
+    savetxt('paramSearch_result.dat', results[None], 
+        fmt='%10.8e', delimiter=' ')
 
     # print(test.get_ptinte_two_flow_correlation('pion_p', 'event_plane', 2, -2))
     #print(test.get_ptinte_two_flow_correlation('pion_p', 'scalar_product', 2, -2))
