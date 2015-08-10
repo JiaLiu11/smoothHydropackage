@@ -1294,18 +1294,18 @@ class ParticleReader(object):
     def generateAnalyzedDatabase(self):
         # duplicate charged particles
         self.duplicateChargedParticles(-1., 1., 2.)
-        self.collect_mean_vn(rap_range = [-0.5, 0.5], rap_type = 'rapidity')
+        self.collect_mean_vn(rap_range = [-2.5, 2.5], rap_type = 'pseudorapidity')
         self.analyzed_db.dropTable('particle_list') # delete duplicate table
 
         self.collect_particle_spectra("charged", rap_type='rapidity')
         self.collect_particle_spectra("charged", rap_type='pseudorapidity')
-        self.collect_particle_yield_vs_rap("charged",
-                                           rap_type='rapidity')
-        self.collect_particle_yield_vs_rap("charged",
-                                           rap_type='pseudorapidity')
+        # self.collect_particle_yield_vs_rap("charged",
+        #                                    rap_type='rapidity')
+        # self.collect_particle_yield_vs_rap("charged",
+        #                                    rap_type='pseudorapidity')
 
         self.collect_basic_particle_spectra()
-        self.collect_flow_Qn_vectors('charged')
+        # self.collect_flow_Qn_vectors('charged')
         for aPart in ['pion_p', 'kaon_p', 'proton']:
             self.collect_flow_Qn_vectors(aPart)
             self.collect_particle_meanPT(aPart)
