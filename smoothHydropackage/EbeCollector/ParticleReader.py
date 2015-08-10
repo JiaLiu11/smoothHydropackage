@@ -384,7 +384,7 @@ class ParticleReader(object):
         print "dndyptdptdphi of %s particle table collected!"% particle_name
 
 
-    def collect_mean_vn(self, particle_name = 'charged', 
+    def collect_mean_vn(self, particle_name = 'charged', pT_range = [0,3],
                         rap_range = [-2.5, 2.5], rap_type = 'pseudorapidity'):
         """
            collect particle mean vn for each urqmd event
@@ -393,6 +393,9 @@ class ParticleReader(object):
         pid_string = self.getPidString(particle_name)
         analyzed_table_name = 'mean_vn'
         order_list=range(2,7)
+
+        # for memory performance
+        rows_buffer = 10000
 
         # check if data exists
         try_data = array(self.analyzed_db.executeSQLquery(
@@ -417,8 +420,8 @@ class ParticleReader(object):
         else:
             try_data = array(self.analyzed_db.executeSQLquery(
                 "select vn_real from %s where "
-                "hydro_event_id = %d and urqmd_event_id = %d and "
-                "pid = %d" % (analyzed_table_name, 1, 1, pid)).fetchmany(10))
+                "hydro_event_id = %d and "
+                "pid = %d" % (analyzed_table_name, 1, pid)).fetchmany(10))
             if try_data.size == 0: collected_flag = False
         # always rewrite old data
         if collected_flag:
@@ -429,37 +432,57 @@ class ParticleReader(object):
                                              "where pid = %d" % (
                                                  analyzed_table_name, pid))
 
-        print("collect mean v%d of %s ..." % (order, particle_name))
+        print("collect mean vn of %s ..." % particle_name)
         icounter = 0
         for hydroId in range(1, self.hydroNev + 1):
             print "start to collect hydro event %d:"%hydroId
             #fetch data from the database
-            data = array(self.db.executeSQLquery(
+            data_cursor = self.analyzed_db.executeSQLquery(
                 "select phi_p from particle_list where hydroEvent_id = %d and "
                 "(%s) and (%g <= %s and %s <= %g) and "
                 "(%g <= pT and pT <= %g)"
                 % (hydroId, pid_string, rap_range[0], rap_type,
-                   rap_type, rap_range[1], pT_range[0], pT_range[1])).fetchall())
-            if data.size!=0:
-                particle_total = data.shape[0]
-                for order in order_list:
-                    cos_nphip = cos(order*data[:])
-                    sin_nphip = sin(order*data[:])
-                    vn_real = sum(cos_nphip)/particle_total
-                    vn_real_err  = sqrt(sum(cos_nphip**2.)/particle_total-vn_real**2.)/sqrt(particle_total)
-                    vn_imag = sum(sin_nphip)/particle_total
-                    vn_imag_err  = sqrt(sum(sin_nphip**2.)/particle_total-vn_imag**2.)/sqrt(particle_total)
+                   rap_type, rap_range[1], pT_range[0], pT_range[1]))
+
+            cos_nphip_array = zeros((len(order_list)))
+            sin_nphip_array = zeros((len(order_list)))
+            cos_nphip_square_array = zeros((len(order_list)))
+            sin_nphip_square_array = zeros((len(order_list)))
+            particle_total = 0
+            while True:
+                data = array(data_cursor.fetchmany(rows_buffer))
+                if data.size!=0:
+                    particle_total += data.shape[0]
+                    for order_index in range(len(order_list)):
+                        order = order_list[order_index]
+                        cos_nphip_array[order_index] += sum(cos(order*data[:]))
+                        sin_nphip_array[order_index] += sum(sin(order*data[:]))
+                        cos_nphip_square_array[order_index] += sum(cos(order*data[:])**2.)
+                        sin_nphip_square_array[order_index] += sum(sin(order*data[:])**2.)              
+                else:
+                    break
+            for order_index in range(len(order_list)):
+                order = order_list[order_index]
+                if particle_total!=0:
+                    cos_nphip = cos_nphip_array[order_index]
+                    sin_nphip = sin_nphip_array[order_index]
+                    cos_nphip_square = cos_nphip_square_array[order_index]
+                    sin_nphip_square = sin_nphip_square_array[order_index] 
+                    vn_real = cos_nphip/particle_total
+                    vn_real_err  = sqrt(cos_nphip_square/particle_total-vn_real**2.)/sqrt(particle_total)
+                    vn_imag = sin_nphip/particle_total
+                    vn_imag_err  = sqrt(sin_nphip_square/particle_total-vn_imag**2.)/sqrt(particle_total)
                     self.analyzed_db.insertIntoTable(
                         analyzed_table_name,
                         (hydroId, pid, order,
                          vn_real, vn_real_err, vn_imag, vn_imag_err))
-            else:
-                self.analyzed_db.insertIntoTable(
-                    analyzed_table_name,
-                    (hydroId, pid, 0,
-                     0, 0, 0, 0))
+                else:
+                    self.analyzed_db.insertIntoTable(
+                        analyzed_table_name,
+                        (hydroId, pid, order,
+                         0, 0, 0, 0))
         self.analyzed_db._dbCon.commit()  # commit changes
-        print "mean vn of %s particle collected!"% (order, particle_name)
+        print "mean vn of %s particle collected!"% particle_name
 
     def collect_basic_particle_spectra(self):
         """
@@ -1271,8 +1294,7 @@ class ParticleReader(object):
     def generateAnalyzedDatabase(self):
         # duplicate charged particles
         self.duplicateChargedParticles(-1., 1., 2.)
-        self.collect_chargedParticle_spectra(rap_range = [-2.5, 2.5],rap_type = 'pseudorapidity')
-        self.collect_mean_vn()
+        self.collect_mean_vn(rap_range = [-0.5, 0.5], rap_type = 'rapidity')
         self.analyzed_db.dropTable('particle_list') # delete duplicate table
 
         self.collect_particle_spectra("charged", rap_type='rapidity')
