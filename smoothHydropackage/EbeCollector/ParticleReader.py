@@ -384,7 +384,7 @@ class ParticleReader(object):
         print "dndyptdptdphi of %s particle table collected!"% particle_name
 
 
-    def collect_mean_vn(self, particle_name = 'charged', pT_range = [0,3],
+    def collect_mean_vn(self, particle_name = 'charged', pT_range = [0.5, 3],
                         rap_range = [-2.5, 2.5], rap_type = 'pseudorapidity'):
         """
            collect particle mean vn for each urqmd event
