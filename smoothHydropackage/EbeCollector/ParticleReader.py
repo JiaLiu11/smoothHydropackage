@@ -756,14 +756,14 @@ class ParticleReader(object):
             Qn_pTdata = (n, pT, Nparticle, Qn_real, Qn_imag, Nparticle_sub, 
                          QnA_real, QnA_imag, QnB_real, QnB_imag, 
                          QnC_real, QnC_imag, QnD_real, QnD_imag)
-            Qn is taken particles havging -0.3 <= rap <= 0.3
-            QnA is taken particles having -0.6 <= rap < -0.3
-            QnB is taken particles having  0.3 <  rap <= 0.6
-            QnC is taken particles having -1.0 <= rap < -0.6
-            QnD is taken particles having  0.6 <  rap <= 1.0
+            Qn is taken particles havging -0.5 <= rap <= 0.5
+            QnA is taken particles having -1.5 <= rap < -0.5
+            QnB is taken particles having 0.5 < rap <= 1.5
+            QnC is taken particles having -2.5 <= rap < -1.5
+            QnD is taken particles having 1.5 < rap <= 2.5
             Nparticle_sub = min(len(QnA), len(QnB), len(QnC), len(QnD))
         """
-        rap_gap = (0.3, 0.6, 1.0)
+        rap_gap = (0.5, 1.5, 2.5)
         eps = 1e-15
         norder = 6
         npT = 30
@@ -779,7 +779,7 @@ class ParticleReader(object):
                     (pT_boundaries[0:npT] + pT_boundaries[1:npT + 1]) / 2.)
 
         print("processing event: (%d, %d) " % (hydro_id, urqmd_id))
-        particleList = array(self.db.executeSQLquery(
+        particleList = array(self.analyzed_db.executeSQLquery(
             "select pT, phi_p, %s from particle_list where "
             "hydroEvent_id = %d and UrQMDEvent_id = %d and (%s)"
             % (rap_type, hydro_id, urqmd_id, pid_string)).fetchall())
@@ -935,11 +935,11 @@ class ParticleReader(object):
             collect nth order flow Qn vector and sub-event QnA, QnB, QnC, QnD
             vectors for all the events. n is from 1 to 6
             Qn := 1/Nparticle * sum_i exp[i*n*phi_i]
-            Qn is taken particles havging -0.3 <= rap <= 0.3
-            QnA is taken particles having -0.6 <= rap < -0.3
-            QnB is taken particles having  0.3 <  rap <= 0.6
-            QnC is taken particles having -1.0 <= rap < -0.6
-            QnD is taken particles having  0.6 <  rap <= 1.0
+            Qn is taken particles havging -0.5 <= rap <= 0.5
+            QnA is taken particles having -1.5 <= rap < -0.5
+            QnB is taken particles having 0.5 < rap <= 1.5
+            QnC is taken particles having -2.5 <= rap < -1.5
+            QnD is taken particles having 1.5 < rap <= 2.5
             (rapidity is used for identified particles 
              and pseudorapidity is used for all charged particles)
         """
@@ -1294,8 +1294,7 @@ class ParticleReader(object):
     def generateAnalyzedDatabase(self):
         # duplicate charged particles
         self.duplicateChargedParticles(-1., 1., 2.)
-        self.collect_mean_vn(rap_range = [-2.5, 2.5], rap_type = 'pseudorapidity')
-        self.analyzed_db.dropTable('particle_list') # delete duplicate table
+        self.collect_mean_vn(rap_range = [-2.5, 2.5], rap_type = 'pseudorapidity', pT_range = [0.5, 3])
 
         self.collect_particle_spectra("charged", rap_type='rapidity')
         self.collect_particle_spectra("charged", rap_type='pseudorapidity')
@@ -1305,11 +1304,11 @@ class ParticleReader(object):
         #                                    rap_type='pseudorapidity')
 
         self.collect_basic_particle_spectra()
-        # self.collect_flow_Qn_vectors('charged')
+        self.collect_flow_Qn_vectors('charged')
         for aPart in ['pion_p', 'kaon_p', 'proton']:
-            self.collect_flow_Qn_vectors(aPart)
+            # self.collect_flow_Qn_vectors(aPart)
             self.collect_particle_meanPT(aPart)
-
+        self.analyzed_db.dropTable('particle_list') # delete duplicate table
         # self.collect_flow_Qn_vectors_for_mergedHaron()
 
     def mergeAnalyzedDatabases(self, toDB, fromDB):
