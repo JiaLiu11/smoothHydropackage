@@ -914,7 +914,7 @@ class EbeCollector(object):
                 assert header_count==15, "No no no... Stop here."
                 try:
                     data_row_count = int(aLine.split()[0])
-                    phi_rotation = random.uniform(0, 2*pi)  # perform a random rotation of the each event
+                    phi_rotation = 0 #random.uniform(0, 2*pi)  # perform a random rotation of the each event
                 except ValueError as e:
                     print("The file "+ UrQMDoutputFilePath +" does not have a valid urqmd output file header!")
                     exit(e)
