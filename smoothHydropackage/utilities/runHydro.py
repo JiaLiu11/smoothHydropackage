@@ -307,8 +307,8 @@ def collectObservables(result_folder, parallel_mode):
     # save the analyzed database to result folder
     shutil.move(path.join(ebeCollector_folder, 'analyzed_particles.db'),
         results_folder_path)
-    shutil.move(path.join(ebeCollector_folder, 'particles.db'),
-        results_folder_path)
+    # shutil.move(path.join(ebeCollector_folder, 'particles.db'),
+    #     results_folder_path)
     # clean up source files
     for aFile in particle_list_files:
         if path.isfile(path.join(ebeCollector_folder, 'event-1', aFile)):
