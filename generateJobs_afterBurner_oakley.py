@@ -136,12 +136,12 @@ cd $TMPDIR/node%d
 mv ./param_search_log_v2.dat %s
 mv ./param_search_log_v3.dat %s
 
-mv ./RESULTS %s/node%d
+mv %s/RESULTS %s/node%d
 """ % (i, walltime, targetWorkingFolder, i, utilitiesFolder, 
         path.join(targetWorkingFolder, utilitiesFolder),
         path.join(targetWorkingFolder, utilitiesFolder),
         targetWorkingFolder, targetWorkingFolder,
-        resultsFolder, i)
+        targetWorkingFolder, resultsFolder, i)
     )
     if compressResultsFolderAnswer == "yes":
         open(path.join(targetWorkingFolder, "node%d.pbs" % i), "a").write(
