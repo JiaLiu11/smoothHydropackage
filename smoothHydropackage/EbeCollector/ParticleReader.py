@@ -1309,6 +1309,7 @@ class ParticleReader(object):
             # self.collect_flow_Qn_vectors(aPart)
             self.collect_particle_meanPT(aPart)
         self.analyzed_db.dropTable('particle_list') # delete duplicate table
+        self.analyzed_db._executeSQL('vacuum') # reclaim space
         # self.collect_flow_Qn_vectors_for_mergedHaron()
 
     def mergeAnalyzedDatabases(self, toDB, fromDB):
