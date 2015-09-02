@@ -394,13 +394,18 @@ C====Input the initial condition from file====
 !---------- Use sFactor ------------------------------------------------
 ! VER-1.03: add support for sFactor parameter
       If (IEin==1 .AND. IEOS==7) Then ! use sFactor. J.Liu: add condition IEin==0
-        Sd = Sd*sFactor
         Print*, "sFactor=", sFactor
+        If(InitialURead .eq. 0) then
+          Sd = Sd*sFactor
+        endif
         Do I = NXPhy0,NXPhy
         Do J = NYPhy0,NYPhy
           Call invertFunctionD(SEOSL7, 0D0, 315D0, 1D-3, 0D0,
      &                        Sd(I,J,NZ0), resultingEd)
           Ed(I,J,NZ0) = resultingEd/HbarC ! to fm^(-4)
+           If(InitialURead .eq. 1) then
+              Ed(I,J,NZ0) = Ed(I,J,NZ0)*sFactor
+           Endif
         End Do
         End Do
         call EntropyTemp3 (Ed,PL, Temp,CMu,Sd,
