@@ -55,7 +55,7 @@ def cleanUpFolder(aDir):
             pass # very likely the the folder is already empty
     makedirs(aDir)
 
-def linearFitSfactor(tau_s, eta_s, t_sw, model="MCGlb", pre_eq=False):
+def linearFitSfactor(tau_s, eta_s, t_sw, model="MCGlb", pre_eq=False, visbulknorm=0.0):
     """
         Use the linear fit result to give an guess of the scaling factor for given
         switching time, shear viscosity and switching temperature.
@@ -64,29 +64,48 @@ def linearFitSfactor(tau_s, eta_s, t_sw, model="MCGlb", pre_eq=False):
                    + A6*eta_s^2 + A7*tau_s*eta_s
     """
     model_str = model+"_%d"%pre_eq
-    # choose linear coefficients
-    if model_str == "MCGlb_0":
-        coeff_list = np.array([192.14190497,-284.36945039,-201.68632700,-0.04096829,176.83509284,
-            -39.69363878,-441.47816092,178.69094531])
-    elif model_str == "MCGlb_1":
-        coeff_list = np.array([36.02240022,-7.32523631,-138.53732379,-0.00868909,-3.84600983,
-            1.65251890,174.27023844,67.81849622])
-    elif model_str == "MCKLN_0":
-        coeff_list = np.array([44.410314428,-66.071626069,-92.632445045,-0.003807115,46.914963646,
-            -14.722666889,48.305633428,67.176481583])
-    elif model_str == "MCKLN_1":
-        coeff_list = np.array([14.16295555,3.90769983,-36.13522848,-0.00381599,-9.33504831,
-            3.46467929,28.07882091,17.86500695])
+    sfactor_lm = -1
+    if abs(visbulknorm)<1e-6:
+        # choose linear coefficients
+        if model_str == "MCGlb_0":
+            coeff_list = np.array([192.14190497,-284.36945039,-201.68632700,-0.04096829,176.83509284,
+                -39.69363878,-441.47816092,178.69094531])
+        elif model_str == "MCGlb_1":
+            coeff_list = np.array([36.02240022,-7.32523631,-138.53732379,-0.00868909,-3.84600983,
+                1.65251890,174.27023844,67.81849622])
+        elif model_str == "MCKLN_0":
+            coeff_list = np.array([44.410314428,-66.071626069,-92.632445045,-0.003807115,46.914963646,
+                -14.722666889,48.305633428,67.176481583])
+        elif model_str == "MCKLN_1":
+            coeff_list = np.array([14.16295555,3.90769983,-36.13522848,-0.00381599,-9.33504831,
+                3.46467929,28.07882091,17.86500695])
+        else:
+            print "linearFitSfactor: cannot predict scaling factor for run mode: %s, pre-eq. = %s"%(model, pre_eq)
+            return norm_factor_default # default value
+        # change unit: GeV --> MeV
+        t_sw = t_sw*1000.0
+        # combine to linear model
+        sfactor_lm = (coeff_list[0] + coeff_list[1]*tau_s + coeff_list[2]*eta_s + coeff_list[3]*t_sw
+                + coeff_list[4]*tau_s**2.0 + coeff_list[5]*tau_s**3.0 
+                + coeff_list[6]*eta_s**2.0 + coeff_list[7]*tau_s*eta_s)
     else:
-        print "linearFitSfactor: cannot predict scaling factor for run mode: %s, pre-eq. = %s"%(model, pre_eq)
-        return norm_factor_default # default value
-    # change unit: GeV --> MeV
-    t_sw = t_sw*1000.0
-    # combine to linear model
-    return (coeff_list[0] + coeff_list[1]*tau_s + coeff_list[2]*eta_s + coeff_list[3]*t_sw
-            + coeff_list[4]*tau_s**2.0 + coeff_list[5]*tau_s**3.0 
-            + coeff_list[6]*eta_s**2.0 + coeff_list[7]*tau_s*eta_s)
-
+        # choose linear coefficients
+        if model_str == "MCGlb_0":
+            coeff_list = np.array([1,0,0,0,0,0,0,0])
+        elif model_str == "MCGlb_1":
+            coeff_list = np.array([32.4855955,-15.8834285,-54.5494184,-3.7276310,7.9139809,-1.6334713,
+                29.3104912,0.6376767])
+        elif model_str == "MCKLN_0":
+            coeff_list = np.array([35.291801, -52.281676,-33.673811,-2.321871,34.195697,-8.403409,
+                21.454700, 1.162961])
+        elif model_str == "MCKLN_1":
+            coeff_list = np.array([12.5669,-2.8823,-10.8335,-1.5868,0.80698,-0.066272,4.83818,
+                0.1713826])
+        # combine to linear model
+        sfactor_lm = (coeff_list[0] + coeff_list[1]*tau_s + coeff_list[2]*eta_s + coeff_list[3]*visbulknorm
+                + coeff_list[4]*tau_s**2.0 + coeff_list[5]*tau_s**3.0 
+                + coeff_list[6]*tau_s*eta_s + coeff_list[7]*tau_s*visbulknorm)
+    return sfactor_lm
 
 def generate_avg_initial_condition(model, ecm, chosen_centrality, collsys,
                                    cut_type='total_entropy', pre_eq=False):
@@ -1076,7 +1095,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos
     # start to run simulations
     if fit_flag:
         print "fitting the overall normalization factor ..."
-        norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
+        norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq, VisBulkNorm) # guess the scaling factor from linear regression
         if norm_factor_guess <=0:
             print "predicted sfactor smaller than 0: "+"sfactor=%g"%norm_factor_guess
             norm_factor_guess = norm_factor_default
