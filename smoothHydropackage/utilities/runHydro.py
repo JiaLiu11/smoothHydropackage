@@ -1095,7 +1095,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos
     # start to run simulations
     if fit_flag:
         print "fitting the overall normalization factor ..."
-        norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq, VisBulkNorm) # guess the scaling factor from linear regression
+        norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
         if norm_factor_guess <=0:
             print "predicted sfactor smaller than 0: "+"sfactor=%g"%norm_factor_guess
             norm_factor_guess = norm_factor_default
