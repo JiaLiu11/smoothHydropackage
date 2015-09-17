@@ -910,6 +910,8 @@ def set_eos(eos_name, tdec):
         eos_files_path = path.join(rootDir, 'EOS/EOS_s95p/s95p_convertedtables/s95p-v1')
     elif eos_name == 'SM-EOS-Q':
         eos_files_path = path.join(rootDir, 'EOS/SMEOSQ')
+    elif eos_name == 'blended':
+        eos_files_path = path.join(rootDir, 'EOS/EOS_s95p/s95p_convertedtables/blended')
     else:
         raise ValueError('invalid EOS: %s' % eos_name)
 
