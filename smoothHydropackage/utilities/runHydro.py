@@ -167,14 +167,15 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     # hydro
     cleanUpFolder(path.join(hydro_path, 'results'))
     cmd = './VISHNew.e'
+    if vis<1e-3: vis_temp = 0
     if(pre_eq == True):
         args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
                 + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
-                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
+                % (tau0, edec, vis_temp, norm_factor, pre_eq, VisBulkNorm))
     else:
         args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
                 + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
-                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
+                % (tau0, edec, vis_temp, norm_factor, pre_eq, VisBulkNorm))
     print "%s : %s" % (cen_string, cmd + args)
     sys.stdout.flush()
     run_record.write(cmd + args)
