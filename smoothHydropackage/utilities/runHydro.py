@@ -360,6 +360,25 @@ def moveDB(source_folder, model, pre_eq):
         print "File %s saved to project folder!"%zipped_file_name
     print "collectMoveDB"+"="*20+'\n'
 
+def backupiSSOSCAR(iSS_location, backup_file_name):
+    backup_path = path.join(project_directory,
+        '%s_%d'%(model, pre_eq), 'iSS_backup')
+    zipped_file_name = '%s.zip'%backup_file_name
+    # compress
+    zip_cmd = 'zip -q %s.zip OSCAR.DAT'%backup_file_name
+    print "Start to compress iSS file: %s......"%backup_file_name
+    subprocess.call(zip_cmd, shell=True, cwd=iSS_location)
+    if not path.exists(backup_path):
+        print "Cannot find backup path: %s"%backup_path
+        makedirs(backup_path)
+    else:
+        # backup 
+        if path.exists(path.join(backup_path, zipped_file_name)):
+            remove(path.join(backup_path, zipped_file_name))
+        shutil.move(path.join(iSS_location, zipped_file_name),
+            backup_path)
+        print "File %s saved to project iSS folder!"%zipped_file_name
+
 
 def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
                       norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq):
@@ -978,6 +997,10 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         if aFile in worth_storing:
             shutil.copy(aFile, results_folder_path)
     shutil.rmtree(iSS_folder_path)  # clean up
+
+    # backup OSCAR file
+    results_folder_name = results_folder_path.split('/')[-1]
+    backupiSSOSCAR(iSS_path, results_folder_name)
 
     if parallel_mode != 0:
         # run subsequent programs in parallel
