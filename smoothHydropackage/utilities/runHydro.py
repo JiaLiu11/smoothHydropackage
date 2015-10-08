@@ -7,6 +7,7 @@ from glob import glob
 import numpy as np
 import re
 import sys
+import time
 
 # centrality list
 cen_list = ['0-5', '5-10', '10-20', '20-30', '30-40',
@@ -252,8 +253,11 @@ def split_iSS_events(number_of_split,
         process_list.append(p)
     # waiting untill all process finish
     print "Waiting for all processes to complete, please be patient..."
+    urqmd_start = time.time()
     for p in process_list: p.wait()
     print "All osc2u and urqmd processes finished!"
+    urqmd_end = time.time()
+    print "UrQMD running time: %f seconds!"%(urqmd_end-urqmd_start)
 
     # collect data
     result_files = []
@@ -856,7 +860,10 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
         run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
             results_folder_path, parallel_mode)
         # collect db and backup v2 search result
+        collectDB_start = time.time()
         collectObservables(result_folder, parallel_mode)
+        collectDB_end = time.time()
+        print "Collect database running time: %f seconds!"%(collectDB_end-collectDB_start)
         moveDB(result_folder, model, pre_eq)
 
     # run the search for v3
@@ -957,9 +964,12 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         remove(path.join(iSS_path, output_file))
     print "%s : %s" % (cen_string, 'iSS.e')
     sys.stdout.flush()
+    iss_start = time.time()
     p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
                          stdout=run_record, stderr=err_record, cwd=iSS_path)
     p.wait()
+    iss_end = time.time()
+    print "iSS run time %f seconds"%(iss_end - iss_start)
 
     worth_storing = []
     for aGlob in ['*vn*.dat']:
@@ -1002,9 +1012,12 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
                     path.join(UrQMD_path, input_file))
         print "%s : %s" % (cen_string, 'runqmd.sh')
         sys.stdout.flush()
+        urqmd_start = time.time()
         p = subprocess.Popen('bash runqmd.sh', shell=True, stdout=run_record,
                              stderr=err_record, cwd=UrQMD_path)
         p.wait()
+        urqmd_end = time.time()
+        print "UrQMD running time: %f seconds!"%(urqmd_end-urqmd_start)
 
         worth_storing = []
         for aGlob in ['particle_list.dat']:
