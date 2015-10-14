@@ -761,6 +761,7 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
     hydro_path = path.join(rootDir, 'VISHNew')
     iS_path = path.join(rootDir, 'iS')
     iS_results_path  = path.join(rootDir, 'iS', 'results')
+    iSS_path = path.join(rootDir, 'iSS')
 
     run_record_file_name = 'run_record_hydro_search.dat'
     err_record_file_name = 'err_record_hydro_search.dat'
@@ -783,7 +784,25 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
     for aFile in glob(path.join(iS_results_path, '*')):
         if aFile in worth_storing:
             shutil.copy(aFile, results_folder_path)
-
+    # run iSS
+    iSS_folder_path = path.join(iSS_path, 'results')
+    if path.exists(iSS_folder_path):
+        shutil.rmtree(iSS_folder_path)
+    makedirs(iSS_folder_path)
+    output_file = 'OSCAR.DAT'
+    if path.isfile(path.join(iSS_path, output_file)):
+        remove(path.join(iSS_path, output_file))
+    for aFile in glob(path.join(iS_results_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, iSS_folder_path)
+    print "%s : %s" % (cen_string, 'iSS.e')
+    sys.stdout.flush()
+    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                         stdout=run_record, stderr=err_record, cwd=iSS_path)
+    p.wait()
+    # backup OSCAR file
+    results_folder_name = results_folder_path.split('/')[-1]
+    backupiSSOSCAR(iSS_path, results_folder_name)    
 
     # run hydro for v3
     flow_order = 3
@@ -836,6 +855,25 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
     for aFile in glob(path.join(hydro_results_path, '*')):
         if aFile in worth_storing:
             shutil.copy(aFile, results_folder_path)
+    # run iSS
+    iSS_folder_path = path.join(iSS_path, 'results')
+    if path.exists(iSS_folder_path):
+        shutil.rmtree(iSS_folder_path)
+    makedirs(iSS_folder_path)
+    output_file = 'OSCAR.DAT'
+    if path.isfile(path.join(iSS_path, output_file)):
+        remove(path.join(iSS_path, output_file))
+    for aFile in glob(path.join(hydro_results_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, iSS_folder_path)
+    print "%s : %s" % (cen_string, 'iSS.e')
+    sys.stdout.flush()
+    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                         stdout=run_record, stderr=err_record, cwd=iSS_path)
+    p.wait()
+    # backup OSCAR file
+    results_folder_name = results_folder_path.split('/')[-1]
+    backupiSSOSCAR(iSS_path, results_folder_name) 
 
     # clean up 
     run_record.close()
