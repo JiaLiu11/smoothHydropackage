@@ -12,7 +12,7 @@ from shutil import copytree, copy, rmtree
 from check_prerequisites import check_environment, check_executables, greetings
 
 # check argv
-estimatedRunTime = 167 # oakley allows 168 Hrs for serial jobs
+estimatedRunTime = 64 # oakley allows 168 Hrs for serial jobs
 try:
     # set parameters
     numberOfJobs = int(argv[1])
@@ -122,14 +122,20 @@ for i in range(1, numberOfJobs+1):
 #PBS -S /bin/bash
 module load python/2.7.1 # for osc oakley cluster
 module load hdf5-serial
-cd %s
+cp -r %s $TMPDIR
+cd $TMPDIR/node%d
 (cd %s
     ulimit -n 1000
-    python runHydro_shell.py 1> RunRecord.txt 2> ErrorRecord.txt
-    cp RunRecord.txt ErrorRecord.txt ../RESULTS/
+    python runHydro_shell.py 1> %s/RunRecord.txt 2> %s/ErrorRecord.txt
 )
 
-""" % (i, walltime, targetWorkingFolder, utilitiesFolder)
+mv ./sfactor_log.dat %s
+mv -f ./RESULTS %s
+
+""" % (i, walltime, targetWorkingFolder, i, utilitiesFolder,
+       path.join(targetWorkingFolder, utilitiesFolder),
+       path.join(targetWorkingFolder, utilitiesFolder),
+       targetWorkingFolder,targetWorkingFolder)
     )
 
 print("Jobs generated. Submit them using submitJobs scripts.")
