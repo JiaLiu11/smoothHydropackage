@@ -1007,38 +1007,51 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         shutil.rmtree(iSS_folder_path)
     makedirs(iSS_folder_path)
 
-    # copy necessary files to iSS folder
-    worth_moving = []
-    for aGlob in ['surface.dat', 'dec*.dat']:
-        worth_moving.extend(glob(path.join(input_folder, aGlob)))
-    for aFile in glob(path.join(input_folder, '*')):
-        if aFile in worth_moving:
-            shutil.copy(aFile, iSS_folder_path) 
-
-    # iSS
-    output_file = 'OSCAR.DAT'
-    if path.isfile(path.join(iSS_path, output_file)):
-        remove(path.join(iSS_path, output_file))
-    print "%s : %s" % (cen_string, 'iSS.e')
-    sys.stdout.flush()
-    iss_start = time.time()
-    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
-                         stdout=run_record, stderr=err_record, cwd=iSS_path)
-    p.wait()
-    iss_end = time.time()
-    print "iSS run time %f seconds"%(iss_end - iss_start)
-
-    worth_storing = []
-    for aGlob in ['*vn*.dat']:
-        worth_storing.extend(glob(path.join(iSS_folder_path, aGlob)))
-    for aFile in glob(path.join(iSS_folder_path, '*')):
-        if aFile in worth_storing:
-            shutil.copy(aFile, results_folder_path)
-    shutil.rmtree(iSS_folder_path)  # clean up
-
-    # backup OSCAR file
+    # skip iSS if OSCAR data exists
+    iss_backup_path = path.join(project_directory,
+        '%s_%d'%(model, pre_eq), 'iSS_backup')
     results_folder_name = results_folder_path.split('/')[-1]
-    backupiSSOSCAR(iSS_path, results_folder_name)
+    iss_backup_file_path = path.join(iss_backup_path, "%s.zip"%results_folder_name)
+    if path.isfile(iss_backup_file_path):
+        print "OSCAR file exists! Skipping iSS ... "
+        shutil.copy(iss_backup_file_path, iSS_path)
+        unzip_cmd = 'unzip -qo %s.zip -d ./'%results_folder_name
+        p = subprocess.Popen(unzip_cmd, shell=True,
+                             stdout=run_record, stderr=err_record, 
+                             cwd=iSS_path)
+        p.wait()
+        remove(path.join(iSS_path, '%s.zip'%results_folder_name))
+    else:
+        # copy necessary files to iSS folder
+        worth_moving = []
+        for aGlob in ['surface.dat', 'dec*.dat']:
+            worth_moving.extend(glob(path.join(input_folder, aGlob)))
+        for aFile in glob(path.join(input_folder, '*')):
+            if aFile in worth_moving:
+                shutil.copy(aFile, iSS_folder_path) 
+        output_file = 'OSCAR.DAT'
+        if path.isfile(path.join(iSS_path, output_file)):
+            remove(path.join(iSS_path, output_file))
+        print "%s : %s" % (cen_string, 'iSS.e')
+        sys.stdout.flush()
+        iss_start = time.time()
+        p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                             stdout=run_record, stderr=err_record, cwd=iSS_path)
+        p.wait()
+        iss_end = time.time()
+        print "iSS run time %f seconds"%(iss_end - iss_start)
+
+        worth_storing = []
+        for aGlob in ['*vn*.dat']:
+            worth_storing.extend(glob(path.join(iSS_folder_path, aGlob)))
+        for aFile in glob(path.join(iSS_folder_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, results_folder_path)
+        shutil.rmtree(iSS_folder_path)  # clean up
+
+        # # backup OSCAR file
+        # results_folder_name = results_folder_path.split('/')[-1]
+        # backupiSSOSCAR(iSS_path, results_folder_name)
 
     if parallel_mode != 0:
         # run subsequent programs in parallel
