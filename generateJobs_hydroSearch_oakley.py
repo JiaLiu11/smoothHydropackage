@@ -12,7 +12,7 @@ from shutil import copytree, copy, rmtree
 from check_prerequisites import check_environment, check_executables, greetings
 
 # check argv
-estimatedRunTime = 64 # oakley allows 168 Hrs for serial jobs
+estimatedRunTime = 48 # oakley allows 168 Hrs for serial jobs
 try:
     # set parameters
     numberOfJobs = int(argv[1])
@@ -114,7 +114,7 @@ for i in range(1, numberOfJobs+1):
     open(path.join(targetWorkingFolder, "node%d.pbs" % i), "w").write(
 """
 #!/usr/bin/env bash
-#PBS -N smoothHydro-%d
+#PBS -N MCKLN_0-%d
 #PBS -l walltime=%s
 #PBS -l mem=8GB
 #PBS -j oe

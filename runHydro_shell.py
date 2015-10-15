@@ -7,12 +7,12 @@ import numpy as np
 from glob import glob
 import shutil
 
-total_nodes = 16
+total_nodes = 128
 
 runHydroParameters = {
     'ecm'              :  2760,      # collision energy (GeV): 7.7, 11.5, 19.6, 27, 39, 62.4, 200, 2760
     'mode'             :  'hydro_search',   #the simulation type:  hydro[default], hybrid, hybrid_search; hydro_search, hybrid_usePrecalculated
-    'model'            :  'MCGlb',   #initial condition model:  MCGlb[default], MCKLN
+    'model'            :  'MCKLN',   #initial condition model:  MCGlb[default], MCKLN
     'vis'              :  0.08,      #the specific shear viscosity used in the hydro simulation eta/s = 0.08 [default]
     'Tdec'             :  0.155,      #the decoupling temperature (GeV) used in the hydro simulation Tdec = 0.12 GeV [default]
     'tau0'             :  0.6,       #the hydrodynamic starting proper time (fm/c) tau0 = 0.6 fm/c [default]
@@ -23,7 +23,7 @@ runHydroParameters = {
     'cen'              :  '10-20',   #specify the centrality bin: All [default], e.g. 20-30
     'collision_system' :  'Pb+Pb',   #type of collision system:  Pb+Pb[default], Au+Au, Cu+Au, U+U, p+Pb, p+Au, d+Au, He+Au
     'pre_eq'           :  False,      #whether to include initial pre-equilibrium
-    'parallel_mode'    :  2,         #switch to run osc2u and urqmd in parallel mode by splitting iSS resampled events to parallel_mode pieces
+    'parallel_mode'    :  10,         #switch to run osc2u and urqmd in parallel mode by splitting iSS resampled events to parallel_mode pieces
 }
 
 def splitParameterTable(infile_name, number_of_nodes):
