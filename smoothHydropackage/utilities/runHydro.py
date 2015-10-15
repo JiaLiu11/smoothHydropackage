@@ -370,15 +370,14 @@ def backupiSSOSCAR(iSS_location, backup_file_name):
     print "Start to compress iSS file: %s......"%backup_file_name
     subprocess.call(zip_cmd, shell=True, cwd=iSS_location)
     if not path.exists(backup_path):
-        print "Cannot find backup path: %s"%backup_path
+        print "Cannot find backup path: %s, creating it..."%backup_path
         makedirs(backup_path)
-    else:
-        # backup 
-        if path.exists(path.join(backup_path, zipped_file_name)):
-            remove(path.join(backup_path, zipped_file_name))
-        shutil.move(path.join(iSS_location, zipped_file_name),
-            backup_path)
-        print "File %s saved to project iSS folder!"%zipped_file_name
+    # backup 
+    if path.exists(path.join(backup_path, zipped_file_name)):
+        remove(path.join(backup_path, zipped_file_name))
+    shutil.move(path.join(iSS_location, zipped_file_name),
+        backup_path)
+    print "File %s saved to project iSS folder!"%zipped_file_name
 
 
 def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
@@ -796,7 +795,7 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
     for aFile in glob(path.join(iS_results_path, '*')):
         if aFile in worth_storing:
             shutil.copy(aFile, iSS_folder_path)
-    print "%s : %s" % (cen_string, 'iSS.e')
+    print "running : iSS.e" 
     sys.stdout.flush()
     p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
                          stdout=run_record, stderr=err_record, cwd=iSS_path)
@@ -867,7 +866,7 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
     for aFile in glob(path.join(hydro_results_path, '*')):
         if aFile in worth_storing:
             shutil.copy(aFile, iSS_folder_path)
-    print "%s : %s" % (cen_string, 'iSS.e')
+    print "running : iSS.e" 
     sys.stdout.flush()
     p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
                          stdout=run_record, stderr=err_record, cwd=iSS_path)
@@ -1024,6 +1023,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         remove(path.join(iSS_path, '%s.zip'%results_folder_name))
     else:
         # copy necessary files to iSS folder
+        print "OSCAR file does not exist in: %s"%iss_backup_file_path
         worth_moving = []
         for aGlob in ['surface.dat', 'dec*.dat']:
             worth_moving.extend(glob(path.join(input_folder, aGlob)))
