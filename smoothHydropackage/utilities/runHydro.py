@@ -360,6 +360,12 @@ def moveDB(source_folder, model, pre_eq):
             backup_path)
         print "File %s saved to project folder!"%zipped_file_name
     print "collectMoveDB"+"="*20+'\n'
+    if path.isfile(path.join(backup_path, zipped_file_name)):
+        print "parameter search file saved!"
+        flag = True
+    else:
+        flag = False
+    return flag
 
 def backupiSSOSCAR(iSS_location, backup_file_name):
     backup_path = path.join(project_directory,
@@ -898,53 +904,48 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
     err_record = open(path.join(rootDir, err_record_file_name), 'w+')
 
     # run after burner for v2
-    flow_order = 2
-    print "Start to search v2:"
-    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
-                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
-                        eos_name, flow_order))
-    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    for flow_order in [2,3]:
+        print "Start to search v%d:"%flow_order
+        result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                         % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
+                            eos_name, flow_order))
+        results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
 
-    # check if result already exists
-    backup_file = path.join(project_directory, '%s_%d'%(model, pre_eq),
-        result_folder+'.zip')
-    if path.isfile(backup_file):
-        print 'skip current run because result already exists!\n'
-    else:
-        if not path.exists(results_folder_path):
-            print "run_hybrid_search_precalculated: no folder %s!"%result_folder
-            sys.exit(-1)
-        run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
-            results_folder_path, parallel_mode)
-        # collect db and backup v2 search result
-        collectDB_start = time.time()
-        collectObservables(result_folder, parallel_mode)
-        collectDB_end = time.time()
-        print "Collect database running time: %f seconds!"%(collectDB_end-collectDB_start)
-        moveDB(result_folder, model, pre_eq)
+        # check if parameter search result already exists
+        backup_file = path.join(project_directory, '%s_%d'%(model, pre_eq),
+            result_folder+'.zip')
+        if path.isfile(backup_file):
+            print 'skip current run because result already exists!\n'
+        else:
+            if not path.exists(results_folder_path):
+                print "run_hybrid_search_precalculated: no folder %s!"%result_folder
+                sys.exit(-1)
+            # check if pre-calculated particle list data exists
+            particleList_folder_path = path.join(project_directory, 
+                '%s_%d'(model, pre_eq), 'particleList_backup')
+            particleList_file_path = path.join(particleList_folder_path,
+                '%.zip'%result_folder)
+            if path.isfile(particleList_file_path):
+                print "skipping UrQMD because particle_list has been found!"
+                # copy data from project folder to results folder
+                shutil.copy(particleList_file_path, results_folder_path)
+                unzip_cmd = 'unzip -qo %s.zip '%result_folder
+                subprocess.call(unzip_cmd, shell=True, cwd = results_folder_path)
+                remove(path.join(results_folder_path, '%s.zip'%result_folder))
+                # collect db and backup v2 search result
+                collectDB_start = time.time()
+                collectObservables(result_folder, parallel_mode)
+                collectDB_end = time.time()
+                print "Collect database running time: %f seconds!"%(collectDB_end-collectDB_start)
+                savedFlag = moveDB(result_folder, model, pre_eq)
+                if savedFlag==True:
+                    remove(particleList_file_path)
+            else:
+                print "No particle_list file found: %s"%particleList_file_path
+                run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
+                    results_folder_path, parallel_mode)
+                move_particleList(results_folder_path, particleList_folder_path)
 
-    # run the search for v3
-    flow_order = 3
-    print "Start to search v3:"
-    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
-                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
-                        eos_name, flow_order))
-    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
-
-    # check if result already exists
-    backup_file = path.join(project_directory, '%s_%d'%(model, pre_eq),
-        result_folder+'.zip')
-    if path.isfile(backup_file):
-        print 'skip current run because result already exists!\n'
-    else:
-        if not path.exists(results_folder_path):
-            print "run_hybrid_search_precalculated: no folder %s!"%result_folder
-            sys.exit(-1)
-        run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
-            results_folder_path, parallel_mode)
-        # collect db and backup v3 search result
-        collectObservables(result_folder, parallel_mode)
-        moveDB(result_folder, model, pre_eq)
 
     run_record.close()
     err_record.close()
@@ -1102,6 +1103,22 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
                 shutil.copy(aFile, results_folder_path)
         remove(path.join(UrQMD_path, input_file))  # clean up
         remove(path.join(UrQMD_path, output_file))  # clean up
+
+def move_particleList(source_folder_path, backup_folder_path):
+    """
+    zip and move urqmd generated particle_list files to the project folder
+    """
+    particle_list_pattern = 'particle_list*.dat'
+    results_folder_name = source_folder_path.split('/')[-1]
+    # zip the particle_list file
+    zip_cmd = 'zip -q %s.zip %s'%(results_folder_name, particle_list_pattern)
+    subprocess.call(zip_cmd, shell=T, cwd = source_folder_path)
+    # move the file
+    if path.exists(path.join(backup_folder_path, '%s.zip'%results_folder_name)):
+        remove(path.join(backup_folder_path, '%s.zip'%results_folder_name))
+    shutil.move(path.join(source_folder_path, '%s.zip'%results_folder_name),
+                backup_folder_path)
+    print "urqmd particle_list file saved!"
 
 
 def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos_name,
