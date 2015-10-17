@@ -916,17 +916,19 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
             result_folder+'.zip')
         if path.isfile(backup_file):
             print 'skip current run because result already exists!\n'
+            sys.stdout.flush()
         else:
             if not path.exists(results_folder_path):
                 print "run_hybrid_search_precalculated: no folder %s!"%result_folder
                 sys.exit(-1)
             # check if pre-calculated particle list data exists
             particleList_folder_path = path.join(project_directory, 
-                '%s_%d'(model, pre_eq), 'particleList_backup')
+                '%s_%d'%(model, pre_eq), 'particleList_backup')
             particleList_file_path = path.join(particleList_folder_path,
-                '%.zip'%result_folder)
+                '%s.zip'%result_folder)
             if path.isfile(particleList_file_path):
                 print "skipping UrQMD because particle_list has been found!"
+                sys.stdout.flush()
                 # copy data from project folder to results folder
                 shutil.copy(particleList_file_path, results_folder_path)
                 unzip_cmd = 'unzip -qo %s.zip '%result_folder
@@ -942,10 +944,21 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
                     remove(particleList_file_path)
             else:
                 print "No particle_list file found: %s"%particleList_file_path
+                sys.stdout.flush()
                 run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
                     results_folder_path, parallel_mode)
-                move_particleList(results_folder_path, particleList_folder_path)
-
+                savedFlag = move_particleList(results_folder_path, particleList_folder_path)
+                # delete backuped iSS file
+                if savedFlag == True:
+                    iss_backup_path = path.join(project_directory,
+                        '%s_%d'%(model, pre_eq), 'iSS_backup')
+                    results_folder_name = results_folder_path.split('/')[-1]
+                    iss_backup_file_path = path.join(iss_backup_path, "%s.zip"%results_folder_name)
+                    try:
+                        remove(iss_backup_file_path)
+                    except:
+                        print "Delete iSS backup file failed!"
+                        print "Please remove it manually: %s.zip"%results_folder_name
 
     run_record.close()
     err_record.close()
@@ -1054,6 +1067,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         # # backup OSCAR file
         # results_folder_name = results_folder_path.split('/')[-1]
         # backupiSSOSCAR(iSS_path, results_folder_name)
+    sys.stdout.flush()
 
     if parallel_mode != 0:
         # run subsequent programs in parallel
@@ -1112,14 +1126,19 @@ def move_particleList(source_folder_path, backup_folder_path):
     results_folder_name = source_folder_path.split('/')[-1]
     # zip the particle_list file
     zip_cmd = 'zip -q %s.zip %s'%(results_folder_name, particle_list_pattern)
-    subprocess.call(zip_cmd, shell=T, cwd = source_folder_path)
+    subprocess.call(zip_cmd, shell=True, cwd = source_folder_path)
     # move the file
     if path.exists(path.join(backup_folder_path, '%s.zip'%results_folder_name)):
         remove(path.join(backup_folder_path, '%s.zip'%results_folder_name))
     shutil.move(path.join(source_folder_path, '%s.zip'%results_folder_name),
                 backup_folder_path)
-    print "urqmd particle_list file saved!"
-
+    if path.isfile(path.join(backup_folder_path, '%s.zip'%results_folder_name)):
+        savedFlag = True
+        print "urqmd particle_list file saved!"
+    else:
+        print "urqmd particle_list file move failed!"
+        savedFlag = False
+    return savedFlag
 
 def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos_name,
                     cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
