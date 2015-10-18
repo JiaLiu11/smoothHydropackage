@@ -891,14 +891,13 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
         # backup OSCAR file
         results_folder_name = results_folder_path.split('/')[-1]
         backupiSSOSCAR(iSS_path, results_folder_name) 
-
-    # clean up 
-    run_record.close()
-    err_record.close()
-    shutil.copy(path.join(rootDir, run_record_file_name), 
-        path.join(results_folder_path))
-    shutil.copy(path.join(rootDir, err_record_file_name), 
-        path.join(results_folder_path))
+        # clean up 
+        run_record.close()
+        err_record.close()
+        shutil.copy(path.join(rootDir, run_record_file_name), 
+            path.join(results_folder_path))
+        shutil.copy(path.join(rootDir, err_record_file_name), 
+            path.join(results_folder_path))
 
 
 def run_hybrid_search_precalculated(model, ecm, vis, tdec, 
