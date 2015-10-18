@@ -779,107 +779,118 @@ def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
     result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
                      % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
                         eos_name, flow_order))
-    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
-    if path.exists(results_folder_path):
-        shutil.rmtree(results_folder_path)
-    makedirs(results_folder_path)
-    # save v2 data - only hydro output
-    worth_storing = []
-    for aGlob in ['surface.dat', 'dec*.dat', 'ecc*.dat', 'VISH2p1_tec.dat']:
-        worth_storing.extend(glob(path.join(iS_results_path, aGlob)))
-    for aFile in glob(path.join(iS_results_path, '*')):
-        if aFile in worth_storing:
-            shutil.copy(aFile, results_folder_path)
-    # run iSS
-    iSS_folder_path = path.join(iSS_path, 'results')
-    if path.exists(iSS_folder_path):
-        shutil.rmtree(iSS_folder_path)
-    makedirs(iSS_folder_path)
-    output_file = 'OSCAR.DAT'
-    if path.isfile(path.join(iSS_path, output_file)):
-        remove(path.join(iSS_path, output_file))
-    for aFile in glob(path.join(iS_results_path, '*')):
-        if aFile in worth_storing:
-            shutil.copy(aFile, iSS_folder_path)
-    print "running : iSS.e" 
-    sys.stdout.flush()
-    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
-                         stdout=run_record, stderr=err_record, cwd=iSS_path)
-    p.wait()
-    # backup OSCAR file
-    results_folder_name = results_folder_path.split('/')[-1]
-    backupiSSOSCAR(iSS_path, results_folder_name)    
+    if path.isfile(path.join(project_directory, 
+                            '%s_%d'%(model, pre_eq),
+                            'iSS_backup', '%s.zip'%result_folder)):
+        print "hydro search results have already been found, skipping v2..."
+    else:
+        print "start to generate iSS events for v2 ... "
+        results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+        if path.exists(results_folder_path):
+            shutil.rmtree(results_folder_path)
+        makedirs(results_folder_path)
+        # save v2 data - only hydro output
+        worth_storing = []
+        for aGlob in ['surface.dat', 'dec*.dat', 'ecc*.dat', 'VISH2p1_tec.dat']:
+            worth_storing.extend(glob(path.join(iS_results_path, aGlob)))
+        for aFile in glob(path.join(iS_results_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, results_folder_path)
+        # run iSS
+        iSS_folder_path = path.join(iSS_path, 'results')
+        if path.exists(iSS_folder_path):
+            shutil.rmtree(iSS_folder_path)
+        makedirs(iSS_folder_path)
+        output_file = 'OSCAR.DAT'
+        if path.isfile(path.join(iSS_path, output_file)):
+            remove(path.join(iSS_path, output_file))
+        for aFile in glob(path.join(iS_results_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, iSS_folder_path)
+        print "running : iSS.e" 
+        sys.stdout.flush()
+        p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                             stdout=run_record, stderr=err_record, cwd=iSS_path)
+        p.wait()
+        # backup OSCAR file
+        results_folder_name = results_folder_path.split('/')[-1]
+        backupiSSOSCAR(iSS_path, results_folder_name)
 
     # run hydro for v3
     flow_order = 3
-    print "Start to search v3:"
-    hydro_initial_path = path.join(hydro_path, 'Initial')
-    cleanUpFolder(hydro_initial_path)
-    # run pre-equilibrium
-    if(pre_eq == True):
-        run_pre_eq(initial_path, chosen_centrality, run_record, err_record, tau0, flow_order)
-        for aFile in glob(path.join(rootDir, 'fs/data/result/event_1/%g'%tau0, '*')):
-            shutil.move(aFile, hydro_initial_path)
-    else:
-        shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path, flow_order, chosen_centrality),
-                    path.join(hydro_path, 'Initial', 'InitialSd.dat'))
-
-    # hydro
-    hydro_results_path = path.join(hydro_path, 'results')
-    if path.exists(path.join(hydro_results_path)):
-        shutil.rmtree(hydro_results_path)
-    makedirs(hydro_results_path)
-    cmd = './VISHNew.e'
-    if(pre_eq == True):
-        args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
-                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
-    else:
-        args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
-                + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
-                % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
-
-    print "%s : %s" % (chosen_centrality, cmd + args)
-    sys.stdout.flush()
-    run_record.write(cmd + args)
-    p = subprocess.Popen(cmd + args, shell=True, stdout=run_record,
-                         stderr=err_record, cwd=hydro_path)
-    p.wait()
-
-    # prepare data backup folder for v3
     result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
                      % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm, 
                         eos_name, flow_order))
-    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
-    if path.exists(results_folder_path):
-        shutil.rmtree(results_folder_path)
-    makedirs(results_folder_path)
-    # save v3 data
-    worth_storing = []
-    for aGlob in ['surface.dat', 'dec*.dat', 'ecc*.dat', 'VISH2p1_tec.dat']:
-        worth_storing.extend(glob(path.join(hydro_results_path, aGlob)))
-    for aFile in glob(path.join(hydro_results_path, '*')):
-        if aFile in worth_storing:
-            shutil.copy(aFile, results_folder_path)
-    # run iSS
-    iSS_folder_path = path.join(iSS_path, 'results')
-    if path.exists(iSS_folder_path):
-        shutil.rmtree(iSS_folder_path)
-    makedirs(iSS_folder_path)
-    output_file = 'OSCAR.DAT'
-    if path.isfile(path.join(iSS_path, output_file)):
-        remove(path.join(iSS_path, output_file))
-    for aFile in glob(path.join(hydro_results_path, '*')):
-        if aFile in worth_storing:
-            shutil.copy(aFile, iSS_folder_path)
-    print "running : iSS.e" 
-    sys.stdout.flush()
-    p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
-                         stdout=run_record, stderr=err_record, cwd=iSS_path)
-    p.wait()
-    # backup OSCAR file
-    results_folder_name = results_folder_path.split('/')[-1]
-    backupiSSOSCAR(iSS_path, results_folder_name) 
+    if path.isfile(path.join(project_directory, 
+                            '%s_%d'%(model, pre_eq),
+                            'iSS_backup', '%s.zip'%result_folder)):
+        print "hydro search results have already been found, skipping v3..."
+    else:    
+        print "Start to search v3:"
+        hydro_initial_path = path.join(hydro_path, 'Initial')
+        cleanUpFolder(hydro_initial_path)
+        # run pre-equilibrium
+        if(pre_eq == True):
+            run_pre_eq(initial_path, chosen_centrality, run_record, err_record, tau0, flow_order)
+            for aFile in glob(path.join(rootDir, 'fs/data/result/event_1/%g'%tau0, '*')):
+                shutil.move(aFile, hydro_initial_path)
+        else:
+            shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path, flow_order, chosen_centrality),
+                        path.join(hydro_path, 'Initial', 'InitialSd.dat'))
+
+        # hydro
+        hydro_results_path = path.join(hydro_path, 'results')
+        if path.exists(path.join(hydro_results_path)):
+            shutil.rmtree(hydro_results_path)
+        makedirs(hydro_results_path)
+        cmd = './VISHNew.e'
+        if(pre_eq == True):
+            args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
+                    + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                    % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
+        else:
+            args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
+                    + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
+                    % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
+
+        print "%s : %s" % (chosen_centrality, cmd + args)
+        sys.stdout.flush()
+        run_record.write(cmd + args)
+        p = subprocess.Popen(cmd + args, shell=True, stdout=run_record,
+                             stderr=err_record, cwd=hydro_path)
+        p.wait()
+
+        # prepare data backup folder for v3
+        results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+        if path.exists(results_folder_path):
+            shutil.rmtree(results_folder_path)
+        makedirs(results_folder_path)
+        # save v3 data
+        worth_storing = []
+        for aGlob in ['surface.dat', 'dec*.dat', 'ecc*.dat', 'VISH2p1_tec.dat']:
+            worth_storing.extend(glob(path.join(hydro_results_path, aGlob)))
+        for aFile in glob(path.join(hydro_results_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, results_folder_path)
+        # run iSS
+        iSS_folder_path = path.join(iSS_path, 'results')
+        if path.exists(iSS_folder_path):
+            shutil.rmtree(iSS_folder_path)
+        makedirs(iSS_folder_path)
+        output_file = 'OSCAR.DAT'
+        if path.isfile(path.join(iSS_path, output_file)):
+            remove(path.join(iSS_path, output_file))
+        for aFile in glob(path.join(hydro_results_path, '*')):
+            if aFile in worth_storing:
+                shutil.copy(aFile, iSS_folder_path)
+        print "running : iSS.e" 
+        sys.stdout.flush()
+        p = subprocess.Popen('ulimit -n 1000; ./iSS.e', shell=True,
+                             stdout=run_record, stderr=err_record, cwd=iSS_path)
+        p.wait()
+        # backup OSCAR file
+        results_folder_name = results_folder_path.split('/')[-1]
+        backupiSSOSCAR(iSS_path, results_folder_name) 
 
     # clean up 
     run_record.close()
