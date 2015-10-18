@@ -955,20 +955,16 @@ def run_hybrid_search_precalculated(model, ecm, vis, tdec,
             else:
                 print "No particle_list file found: %s"%particleList_file_path
                 sys.stdout.flush()
-                run_afterBurner(results_folder_path, chosen_centrality, run_record, err_record,
+                oscar_backup_path, oscar_tmp_path = run_afterBurner(results_folder_path, 
+                    chosen_centrality, run_record, err_record,
                     results_folder_path, parallel_mode)
+                remove(oscar_backup_path)
                 savedFlag = move_particleList(results_folder_path, particleList_folder_path)
-                # delete backuped iSS file
-                if savedFlag == True:
-                    iss_backup_path = path.join(project_directory,
-                        '%s_%d'%(model, pre_eq), 'iSS_backup')
-                    results_folder_name = results_folder_path.split('/')[-1]
-                    iss_backup_file_path = path.join(iss_backup_path, "%s.zip"%results_folder_name)
-                    try:
-                        remove(iss_backup_file_path)
-                    except:
-                        print "Delete iSS backup file failed!"
-                        print "Please remove it manually: %s.zip"%results_folder_name
+                # move iSS file back if particle_list is not saved
+                if savedFlag == False:
+                    print "particle_list backup failed! move oscar file back!"
+                    shutil.copy(oscar_tmp_path, oscar_backup_path.split("/")[0:-1])
+                    remove(oscar_tmp_path)
 
     run_record.close()
     err_record.close()
@@ -1036,7 +1032,10 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         '%s_%d'%(model, pre_eq), 'iSS_backup')
     results_folder_name = results_folder_path.split('/')[-1]
     iss_backup_file_path = path.join(iss_backup_path, "%s.zip"%results_folder_name)
+    # location list
+    iss_files_location_list = [None, None]
     if path.isfile(iss_backup_file_path):
+        iss_files_location_list[0] = iss_backup_file_path
         print "OSCAR file exists! Skipping iSS ... "
         shutil.copy(iss_backup_file_path, iSS_path)
         unzip_cmd = 'unzip -qo %s.zip -d ./'%results_folder_name
@@ -1044,7 +1043,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
                              stdout=run_record, stderr=err_record, 
                              cwd=iSS_path)
         p.wait()
-        remove(path.join(iSS_path, '%s.zip'%results_folder_name))
+        iss_files_location_list[1] = path.join(iSS_path, '%s.zip'%results_folder_name)
     else:
         # copy necessary files to iSS folder
         print "OSCAR file does not exist in: %s"%iss_backup_file_path
@@ -1127,6 +1126,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
                 shutil.copy(aFile, results_folder_path)
         remove(path.join(UrQMD_path, input_file))  # clean up
         remove(path.join(UrQMD_path, output_file))  # clean up
+    return iss_files_location_list
 
 def move_particleList(source_folder_path, backup_folder_path):
     """
