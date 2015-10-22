@@ -401,7 +401,7 @@ class ParticleReader(object):
             print "p0c = %f"%p0c
             return pb_lab, pc_lab
         # isotropic decay
-        theta= arccos(random.uniform(0, 1))
+        theta= arccos(random.uniform(-1., 1.))
         phi  = random.uniform(0, 2*pi)
         p_abs = sqrt(p0b**2.-mb**2.)
         pb = array([p0b, p_abs*sin(theta)*cos(phi), p_abs*sin(theta)*sin(phi), 
@@ -431,7 +431,7 @@ class ParticleReader(object):
         # in local rest frame
         p0b = (ma**2. + mb**2. - mc**2) / (2.0*ma)
         p0c = (ma**2. - mb**2. + mc**2) / (2.0*ma)
-        theta_array = random.uniform(0, pi, size=pa_matrix.shape[0]) #arccos(random.uniform(0, 1, size=pa_matrix.shape[0]))#array([0.1, 0.1])
+        theta_array = arccos(random.uniform(-1., 1., size=pa_matrix.shape[0]))#array([0.1, 0.1])
         phi_array  =  random.uniform(0, 2*pi, size=pa_matrix.shape[0])     #array([0.2, 0.2])
         # find pb and pc for all particles
         pb_matrix, pc_matrix = zeros(pa_matrix.shape), zeros(pa_matrix.shape)
