@@ -535,11 +535,26 @@ class ParticleReader(object):
         source_data_cursor = self.db.executeSQLquery(
             "select * from particle_list "
             "where pid=%d"%source_pid)
-        # create backup data table
+        # backup up source and target particles
         self.db.createTableIfNotExists("particle_list_backup", 
-            (   ("hydroEvent_id","integer"), ("UrQMDEvent_id","interger"), ("pid","integer"), 
+               (("hydroEvent_id","integer"), ("UrQMDEvent_id","interger"), ("pid","integer"), 
                 ("tau","real"), ("x","real"), ("y","real"), ("eta","real"), 
                 ("pT", "real"), ("phi_p", "real"), ("rapidity", "real"), ("pseudorapidity", "real")) )
+        for iPid in [source_pid, product1_pid, product2_pid]:
+            product_data_cursor = self.db.executeSQLquery(
+                                        "select * from particle_list "
+                                        "where pid=%d"%iPid)
+            while True:
+                product_data_tobackup = array(product_data_cursor.fetchmany(5000))
+                if product_data_tobackup.size == 0:
+                    break
+                try:
+                    self.db.insertIntoTable("particle_list_backup", list(product_data_tobackup))
+                except:
+                    print "particle_decay: backup particle pid=%d data failed"%iPid
+                    exit(-1)
+
+        # decay
         while True:
             source_data = array(source_data_cursor.fetchmany(5000))
             if source_data.size == 0:
@@ -552,7 +567,6 @@ class ParticleReader(object):
                 source_4momentum_data, source_mass, product1_mass, product2_mass)
             try:
                 # backup particle source
-                self.db.insertIntoTable("particle_list_backup", list(source_data))
                 # save product particle 1
                 product1_momentum_dbFormat =  self.toDBmomentum_format_converter(product1_4momentum)
                 product_1_data = source_data.copy()
@@ -567,6 +581,7 @@ class ParticleReader(object):
                 self.db.insertIntoTable("particle_list", list(product_2_data))
             except:
                 print "particle_decay: save data failed!"
+                exit(-1)
         # delete particle source
         self.db.executeSQLquery("delete from particle_list "
                                  "where pid = %d" %source_pid)
