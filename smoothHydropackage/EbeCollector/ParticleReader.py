@@ -595,6 +595,9 @@ class ParticleReader(object):
                 except:
                     print "particle_decay: saving data failed!"
                     exit(-1)
+            source_data_cursor, source_data, source_momentum_data, source_4momentum_data = None, None, None, None
+            product1_4momentum, product2_4momentum, product1_momentum_dbFormat, product2_momentum_dbFormat = None, None, None, None
+            product_1_data, product_2_data=None
             # delete particle source
             self.db.executeSQLquery("delete from particle_list "
                                      "where pid = %d and hydroEvent_id=%d" %(source_pid, hydroId))
@@ -1441,7 +1444,7 @@ class ParticleReader(object):
                 "select pT from particle_list " 
                 "where pid=%d and %g <= %s and %s <= %g "
                 " and pT>%f and pT<%f"
-                %(pid, rap_lower, rap_type, rap_type, rap_upper
+                %(pid, rap_lower, rap_type, rap_type, rap_upper,
                   pT_lower, pT_upper)).fetchall())
             # calculate mean pt
             if particle_pT.size!=0:
@@ -1506,7 +1509,7 @@ class ParticleReader(object):
                 "select pT from particle_list " 
                 "where pid=%d and %g <= %s and %s <= %g "
                 " and pT>%f and pT<%f"
-                %(pid, rap_lower, rap_type, rap_type, rap_upper
+                %(pid, rap_lower, rap_type, rap_type, rap_upper,
                     pT_lower, pT_upper)).fetchall())
             particle_pTsquare = particle_pt**2.
             particle_pT = None
@@ -1597,9 +1600,13 @@ class ParticleReader(object):
                                            rap_type='rapidity')
         self.collect_particle_yield_vs_rap("charged",
                                            rap_type='pseudorapidity')
-
-        self.collect_basic_particle_spectra()
         self.collect_flow_Qn_vectors('charged')
+
+        # collect yield
+        self.collect_basic_particle_spectra()
+        self.collect_basic_particle_yield()
+        self.collect_particle_yield_vs_rap('lambda', rap_type='rapidity')
+        self.collect_particle_yield_vs_rap('lambda', rap_type='pseudorapidity')
 
         for aPart in ['pion_p', 'kaon_p', 'proton']:
            # self.collect_flow_Qn_vectors(aPart)
