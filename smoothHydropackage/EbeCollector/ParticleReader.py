@@ -4,7 +4,7 @@ from sys import argv, exit
 from os import path
 from DBR import SqliteDB
 from numpy import *
-import math
+import math, gc
 
 # define colors
 purple = "\033[95m"
@@ -595,15 +595,13 @@ class ParticleReader(object):
                 except:
                     print "particle_decay: saving data failed!"
                     exit(-1)
-            source_data_cursor, source_data, source_momentum_data, source_4momentum_data = None, None, None, None
-            product1_4momentum, product2_4momentum, product1_momentum_dbFormat, product2_momentum_dbFormat = None, None, None, None
-            product_1_data, product_2_data=None
             # delete particle source
             self.db.executeSQLquery("delete from particle_list "
                                      "where pid = %d and hydroEvent_id=%d" %(source_pid, hydroId))
             print "hydro event %d/%d finished!"%(hydroId, self.hydroNev)
             self.db._dbCon.commit()
             source_data_cursor.close()
+            gc.collect()
         self.db.closeConnection()
         print "Decay finished!"
 
