@@ -1444,6 +1444,73 @@ class ParticleReader(object):
                                             (pid, mean_pT_value, mean_pT_error))
         self.analyzed_db._dbCon.commit()  # commit changes
 
+    def collect_particle_mean_pTsquare(self, particle_name, pT_range=[0,10]):
+        """
+            collect particle <pT^2> without pT cut and rapidity=(-0.5, 0.5)
+            in accordance with ALICE identified particle results
+        """
+         # get pid string
+        pid = self.pid_lookup[particle_name]
+        pidString = self.getPidString(particle_name)
+        analyzed_table_name = 'particle_meanPTsquare'
+        # rapidity 
+        rap_type = "rapidity"
+        rap_lower=-0.5
+        rap_upper= 0.5
+        # pT range
+        pT_lower, pT_upper = pT_range
+
+        # check whether the data are already collected
+        collected_flag = True
+        if self.analyzed_db.createTableIfNotExists(analyzed_table_name,
+                                                   (('pid', 'integer'),
+                                                    ('mean_pTsquare_value', 'real'),
+                                                    ('mean_pTsquare_error', 'real'))):
+            collected_flag = False
+        else:
+            try_data = array(self.analyzed_db.executeSQLquery(
+                "select * from %s where "
+                "pid = %d" % (analyzed_table_name, pid)).fetchall())
+            if try_data.size == 0: collected_flag = False
+
+        # check whether user wants to update the analyzed data
+        if collected_flag:
+            print("particle spectra of %s has already been collected!"
+                  % particle_name)
+            inputval = raw_input(
+                "Do you want to delete the existing one and collect again?")
+            if inputval.lower() == 'y' or inputval.lower() == 'yes':
+                self.analyzed_db.executeSQLquery("delete from %s "
+                                                 "where pid = %d" % (
+                                                     analyzed_table_name, pid))
+                self.analyzed_db._dbCon.commit()  # commit changes
+                collected_flag = False
+
+        # collect data loop over all the events
+        mean_pTsquare_value = 0.0
+        mean_pTsquare_error = 0.0
+        if not collected_flag:
+            print("collect %s mean pT ..." % particle_name)
+            particle_pT = array(self.db.executeSQLquery(
+                "select pT from particle_list " 
+                "where pid=%d and %g <= %s and %s <= %g "
+                " and pT>%f and pT<%f"
+                %(pid, rap_lower, rap_type, rap_type, rap_upper
+                    pT_lower, pT_upper)).fetchall())
+            particle_pTsquare = particle_pt**2.
+            particle_pT = None
+            # calculate mean pt
+            if particle_pTsquare.size!=0:
+                totalN = len(particle_pTsquare)
+                mean_pTsquare_value = sum(particle_pTsquare)/totalN
+                mean_pTsquare_error = (sqrt(sum(particle_pTsquare**2.0)/totalN - 
+                                      mean_pTsquare_value**2.0)
+                                /sqrt(self.totNev -1))
+            # insert into table
+            self.analyzed_db.insertIntoTable(analyzed_table_name, 
+                                            (pid, mean_pTsquare_value, mean_pTsquare_error))
+        self.analyzed_db._dbCon.commit()  # commit changes
+
     def rapToPseudorap(self, mass, pT, rap):
         """
             Convert rapidity to pseudo rapidity
