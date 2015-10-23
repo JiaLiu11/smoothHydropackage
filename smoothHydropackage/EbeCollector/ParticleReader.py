@@ -1383,7 +1383,7 @@ class ParticleReader(object):
                             )
         self.analyzed_db._dbCon.commit()  # commit changes
 
-    def collect_particle_meanPT(self, particle_name):
+    def collect_particle_meanPT(self, particle_name, pT_range=[0,10]):
         """
             collect particle mean pT without pT cut and rapidity=(-0.5, 0.5)
             in accordance with ALICE identified particle results
@@ -1396,6 +1396,8 @@ class ParticleReader(object):
         rap_type = "rapidity"
         rap_lower=-0.5
         rap_upper= 0.5
+        # pT range
+        pT_lower, pT_upper = pT_range
 
         # check whether the data are already collected
         collected_flag = True
@@ -1430,8 +1432,10 @@ class ParticleReader(object):
             print("collect %s mean pT ..." % particle_name)
             particle_pT = array(self.db.executeSQLquery(
                 "select pT from particle_list " 
-                "where pid=%d and %g <= %s and %s <= %g"
-                %(pid, rap_lower, rap_type, rap_type, rap_upper)).fetchall())
+                "where pid=%d and %g <= %s and %s <= %g "
+                " and pT>%f and pT<%f"
+                %(pid, rap_lower, rap_type, rap_type, rap_upper
+                  pT_lower, pT_upper)).fetchall())
             # calculate mean pt
             if particle_pT.size!=0:
                 totalN = len(particle_pT)
