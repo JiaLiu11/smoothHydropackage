@@ -72,9 +72,16 @@ class ParticleReader(object):
             'xi_m_total'      :       10013,
             'omega_total'     :       10015,
         }
-
         # update pid table
         self.pid_lookup.update(self.mergedHaron_pid_dict)  
+
+        # experimental pT range for spectra
+        self.pT_range_dict = {
+            'pion_p'        :       [0.11, 2.95],
+            'kaon_p'        :       [0.225, 1.95],
+            'proton'        :       [0.325, 2.95]
+
+        }
 
         # create index for the particle_list table
         if not self.db.doesIndexExist("particleListIndex"):
@@ -1593,9 +1600,13 @@ class ParticleReader(object):
 
         self.collect_basic_particle_spectra()
         self.collect_flow_Qn_vectors('charged')
+
         for aPart in ['pion_p', 'kaon_p', 'proton']:
            # self.collect_flow_Qn_vectors(aPart)
-           self.collect_particle_meanPT(aPart)
+           pT_range_now = self.pT_range_dict[aPart]
+           self.collect_particle_meanPT(aPart, pT_range_now)
+           self.collect_particle_mean_pTsquare(aPart, pT_range_now)
+
         self.analyzed_db.dropTable('particle_list') # delete duplicate table
         self.analyzed_db._executeSQL('vacuum') # reclaim space
         self.collect_flow_Qn_vectors_for_mergedHaron()
