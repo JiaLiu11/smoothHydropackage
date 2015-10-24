@@ -1179,6 +1179,26 @@ class AnalyzedDataReader(object):
         #                 / sqrt(self.tot_nev - 1))
         # return meanpT_avg
 
+    def get_particle_meanPTsquare(
+            self, particle_name):
+        """
+            compute mean pT of user specified particle. The rapidity 
+            range has been constraint on -0.5<=rapidity<=0.5 when 
+            collecting collecting pt spectra for identified particles.
+        """
+        print("read <pT^2> for %s ... " % particle_name)
+        pid = self.pid_lookup[particle_name]
+
+        analyzed_table_name = 'particle_meanPTsquare'
+        try:
+            pt_square_data = self.db.executeSQLquery(
+                "select mean_pTsquare_value, mean_pTsquare_error from %s "
+                "where pid=%d"%(analyzed_table_name, pid)).fetchall()
+        except:
+            print "Cannnot read from table %s"%analyzed_table_name
+
+        return array(pt_square_data)
+
     def get_diffvn_2pc_flow(
             self, particle_name, order, pT_range=linspace(0.0, 3.0, 31)):
         """
@@ -2089,6 +2109,22 @@ if __name__ == "__main__":
     for aParticle in ['pion_p', 'kaon_p', 'proton']:
         meanPT =  test.get_particle_meanPT(aParticle)
         results = append(results, meanPT)
+
+    # <pT^2> for proton
+    results = append(results, test.get_particle_meanPTsquare('proton'))
+
+    # yield
+    temp, pion_yield, pion_yield_error = test.get_particle_yield('pion_p',
+                                rap_type = 'rapidity', rap_range=(-0.5, 0.5))
+    errorXoverY = lambda x,x_err,y,y_err: x/y*sqrt((x_err/x)**2.+(y_err/y)**2)
+    for aParticle in ['kaon_p', 'proton', 'lambda']:
+        a, a_yield, a_error = test.get_particle_yield(aParticle,
+                                rap_type = 'rapidity', rap_range=(-0.5, 0.5))
+        yield_ratio = pion_yield/a_yield
+        yield_ratio_error = errorXoverY(pion_yield, pion_yield_error,
+                                        a_yield, a_error)
+        results = append(results, [yield_ratio, yield_ratio_error])
+    # save
     savetxt('paramSearch_result.dat', results[None], 
         fmt='%10.8e', delimiter=' ')
 

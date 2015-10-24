@@ -1502,14 +1502,14 @@ class ParticleReader(object):
         mean_pTsquare_value = 0.0
         mean_pTsquare_error = 0.0
         if not collected_flag:
-            print("collect %s mean pT ..." % particle_name)
+            print("collect %s <pT^2> ..." % particle_name)
             particle_pT = array(self.db.executeSQLquery(
                 "select pT from particle_list " 
                 "where pid=%d and %g <= %s and %s <= %g "
                 " and pT>%f and pT<%f"
                 %(pid, rap_lower, rap_type, rap_type, rap_upper,
                     pT_lower, pT_upper)).fetchall())
-            particle_pTsquare = particle_pt**2.
+            particle_pTsquare = particle_pT**2.
             particle_pT = None
             # calculate mean pt
             if particle_pTsquare.size!=0:
@@ -1614,7 +1614,7 @@ class ParticleReader(object):
 
         self.analyzed_db.dropTable('particle_list') # delete duplicate table
         self.analyzed_db._executeSQL('vacuum') # reclaim space
-        self.collect_flow_Qn_vectors_for_mergedHaron()
+        #self.collect_flow_Qn_vectors_for_mergedHaron()
 
     def mergeAnalyzedDatabases(self, toDB, fromDB):
         """
