@@ -6,7 +6,7 @@ here=$(pwd)
 cd $here/osc2u
 ./osc2u.e < OSCAR.DAT 1>run_log.dat 2>run_err.dat
 rm -f OSCAR.DAT
-
+/Users/Jia/code/smoothHydropackage/smoothHydropackage/utilities/run_osc2u_urqmd.sh
 # transfer osc2u result to urqmd
 mv $here/osc2u/fort.14 $here/urqmd/OSCAR.input
 
