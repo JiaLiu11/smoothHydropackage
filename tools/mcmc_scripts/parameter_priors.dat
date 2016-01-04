@@ -1,4 +1,0 @@
-UNIFORM  tau_s        0.1   3.0
-UNIFORM	 eta_over_s   0.0   0.21
-UNIFORM  t_dec        0.13  0.17
-UNIFORM  bulk_norm    0.0   4.0

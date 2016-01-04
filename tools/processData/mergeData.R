@@ -1,7 +1,10 @@
 library(dplyr)
 rm(list=ls())
-# read in
+
+# run options
 mode = 'MCGlb_1'
+
+# read in
 v2_data <- read.table(paste(mode, 
                             sprintf('param_search_log_v2_%s.dat',tolower(mode)),sep='/'),
                       header = F, na.strings = 'nan')
