@@ -3,6 +3,7 @@
 rm(list=ls())
 # run parameters
 model <- 'MCGlb_1'
+madai_folder <- '/Users/Jia/code/madai/paramSearch'
 parent_folder_name <- 'model_output'
 
 # read in data
@@ -21,7 +22,7 @@ colnames(data_raw)<-c('tau_s', 'eta_over_s', 't_dec', 'bulk_norm',
                       "pil_ratio_mean", "pil_ratio_err")
 
 # prepare folder structure
-target_folder <- sprintf('/Users/Jia/code/madai/paramSearch/%s',model)
+target_folder <- sprintf('%s/%s', madai_folder, model)
 folder_names <- sprintf('run%04d', seq(1, folders_total))
 if( file.exists(file.path(target_folder, parent_folder_name))==F){
     dir.create(file.path(target_folder, parent_folder_name))
