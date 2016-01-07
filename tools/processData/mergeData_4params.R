@@ -3,17 +3,18 @@ rm(list=ls())
 
 # run options
 mode = 'MCGlb_1'
+folder = '.'
 
 # read in
-v2_data <- read.table(paste(mode, 
-                            sprintf('param_search_log_v2_%s_4params.dat',tolower(mode)),sep='/'),
+v2_data <- read.table(paste(folder, 
+                            sprintf('param_search_log_v2_%s.dat',tolower(mode)),sep='/'),
                       header = F, na.strings = 'nan')
-v3_data <- read.table(paste(mode, 
-                            sprintf('param_search_log_v3_%s_4params.dat', tolower(mode)),sep='/'),
+v3_data <- read.table(paste(folder, 
+                            sprintf('param_search_log_v3_%s.dat', tolower(mode)),sep='/'),
                       header = F,na.strings = 'nan')
 
 # output
-outputfile <- file.path(mode, 
+outputfile <- file.path(folder, 
                         paste0('param_search_log_',mode,'_4params.dat'))
 
 # join by 

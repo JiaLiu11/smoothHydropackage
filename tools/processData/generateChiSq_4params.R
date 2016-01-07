@@ -92,7 +92,7 @@ chiSqGenerator<-function(infile, outfile,
 }
 
 # process glb1
-in_file = 'MCGlb_1/param_search_log_MCGlb_1_4params.dat'
+in_file = 'param_search_log_MCGlb_1_4params.dat'
 out_file = 'hasfs_glb_tet_chiSq_4params.dat'
 results_list = chiSqGenerator(in_file, out_file,
                               v2_ch_exp_value, v2_ch_exp_error,
