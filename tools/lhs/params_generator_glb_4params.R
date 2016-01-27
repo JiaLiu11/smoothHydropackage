@@ -14,7 +14,7 @@ visualizeFlag <- FALSE
 
 # generate random numbers
 set.seed(1) # make it reproducible
-points_trial <- randomLHS(1, 4)
+points_trial <- randomLHS(8, 4)
 
 ########################################
 # project it to MC-Glb or MC-KLN grids
