@@ -21,8 +21,8 @@
 *
 *
 0.02        !dT_1                  time step
-200         !lattice size (in positive direction)
-19.5        !boundary R0
+80          !lattice size (in positive direction)
+7.5         !boundary R0
 *
 *
 4.0,6.0     !Rx2,Ry2               <x^2> and <y^2>, for Gaussian initialization only

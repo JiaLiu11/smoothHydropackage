@@ -14,7 +14,7 @@ visualizeFlag <- FALSE
 
 # generate random numbers
 set.seed(1) # make it reproducible
-points_trial <- randomLHS(1024, 4)
+points_trial <- randomLHS(1, 4)
 
 ########################################
 # project it to MC-Glb or MC-KLN grids
@@ -26,6 +26,7 @@ if(model=='glb'){
 } else {
     taus_bd  = c(0.1, 2.0)
     etas_bd  = c(0.08, 0.28)
+    tsw_bd  = c(130, 170)
 }
 bNorm_bd = c(0,4)
 

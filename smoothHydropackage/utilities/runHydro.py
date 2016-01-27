@@ -149,11 +149,11 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     cleanUpFolder(path.join(hydro_path, 'results'))
     cmd = './VISHNew.e'
     if(pre_eq == True):
-        args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
+        args = (' IINIT=2 IEOS=7 iEin=0'
                 + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
                 % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
     else:
-        args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
+        args = (' IINIT=2 IEOS=7 iEin=1'
                 + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
                 % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
     print "%s : %s" % (cen_string, cmd + args)
@@ -514,7 +514,7 @@ def fit_hydro(dNdeta_goal, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_gue
     hydro_path = path.join(rootDir, 'VISHNew')
     iS_path = path.join(rootDir, 'iS')
     norm_factor = norm_factor_guess
-    tol = 1e-2 # approximately 10 when dNdeta_goal = 1600
+    tol = 0.95 # approximately 10 when dNdeta_goal = 1600
     target_file = 'Charged_eta_integrated_vndata.dat'
     sfactor_log = open(path.join('..', 'sfactor_log.dat'), 'a+')
     while 1:

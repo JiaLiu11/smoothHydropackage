@@ -372,7 +372,7 @@ C====Input the initial condition from file====
             Close(2)
             Do I = NXPhy0,NXPhy
             Do J = NYPhy0,NYPhy
-              Call invertFunctionD(SEOSL7, 0D0, 315D0, 1D-3, 0D0,
+              Call invertFunctionD(SEOSL7, 0D0, 750D0, 1D-3, 0D0,
      &                        Sd(I,J,NZ0), resultingEd)
               Ed(I,J,NZ0) = resultingEd/HbarC ! to fm^(-4)
             End Do
@@ -400,7 +400,7 @@ C====Input the initial condition from file====
         endif
         Do I = NXPhy0,NXPhy
         Do J = NYPhy0,NYPhy
-          Call invertFunctionD(SEOSL7, 0D0, 315D0, 1D-3, 0D0,
+          Call invertFunctionD(SEOSL7, 0D0, 750D0, 1D-3, 0D0,
      &                        Sd(I,J,NZ0), resultingEd)
           Ed(I,J,NZ0) = resultingEd/HbarC ! to fm^(-4)
            If(InitialURead .eq. 1) then
