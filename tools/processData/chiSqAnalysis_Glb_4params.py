@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 # run constant
 init_model = "hasfs_glb" # kln, glb
 inputFile_name = "%s_tet_chiSq_4params.dat"%init_model
-chiSq_criteria = 90 # 5 DOF: v2, v3, pion <pT>, proton <pT>, kaon <pT>
+chiSq_criteria = 1000 # 5 DOF: v2, v3, pion <pT>, proton <pT>, kaon <pT>
 taus_bd = [0.1, 3]
 etas_bd = [0,  0.21]
 tdec_bd = [0.13, 0.17]
 visbulknorm_bd = [0,4]
 chisq_bd= [0, 850]
-exp_factor = 1e5
+exp_factor = 1e7
 init_model_label = "Glb w/ pre-eq." if(init_model=="hasfs_glb") else "Glb w/o pre-eq."
 
 dof=3

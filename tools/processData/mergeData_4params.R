@@ -2,7 +2,7 @@ library(dplyr)
 rm(list=ls())
 
 # run options
-mode = 'MCGlb_1'
+mode = 'PlayGround'
 folder = '.'
 
 # read in
@@ -41,8 +41,8 @@ df_result <- data.frame(taus = joined$V1.x,
                         pik_ratio_err   = sqrt(joined$V18.x^2+joined$V18.y^2)/sqrt(2),
                         pip_ratio_mean  = (joined$V19.x+joined$V19.y)/2,
                         pip_ratio_err   = sqrt(joined$V20.x^2+joined$V20.y^2)/sqrt(2),
-                        pil_ratio_mean  = (joined$V21.x+joined$V21.y)/2,
-                        pil_ratio_err   = sqrt(joined$V22.x^2+joined$V22.y^2)/sqrt(2)
+                        pil_ratio_mean  = 0.0, #(joined$V21.x+joined$V21.y)/2,
+                        pil_ratio_err   = 0.0 #sqrt(joined$V22.x^2+joined$V22.y^2)/sqrt(2)
 )
 
 # output data
