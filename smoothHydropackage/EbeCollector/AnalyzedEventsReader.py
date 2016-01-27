@@ -3,6 +3,7 @@
 from sys import argv, exit
 from os import path
 from DBR import SqliteDB
+from scipy.interpolate import griddata
 from numpy import *
 
 # define colors
@@ -363,6 +364,121 @@ class AnalyzedDataReader(object):
             (sqrt(particle_yield_err / self.tot_nev - particle_yield ** 2)
              / sqrt(self.tot_nev - 1)) * drap)
         return (mean_rap, particle_yield, particle_yield_err)
+
+
+    def get_particle_dndyptdptdphi_table(self, hydro_event_id, urqmd_event_id, 
+        pT_array, phip_array):
+        """
+            This function transform the dndyptdptdphi table in database 
+            to a 2D matrix in the same format as that in iS code.
+            Process: for each event, read in plain table, then
+                     interpolate to specified pT_array and phi_array, 
+            Output: 2D matrix with lines for pT and columns for phip
+        """
+        particle_name = 'charged'
+        pid = self.pid_lookup[particle_name]
+        rap_type = 'pseudorapidity'
+        analyzed_table_name = 'particle_dNdyptdptdphi'
+        #get data
+        data = array(self.db.executeSQLquery(
+            "select pT, phi_p, dNdyptdptdphi from %s "
+            "where hydro_event_id = %d and urqmd_event_id = %d "
+            "and pid=%d"
+            % (analyzed_table_name, hydro_event_id, urqmd_event_id, pid)).fetchall())
+        if data.size == 0:
+            print "get_particle_dndyptdptdphi_table: no data for hydro event %d, urqmd event %d"%(hydro_event_id, urqmd_event_id)
+            return zeros((len(pT_array), len(phip_array)))
+
+        #tranform phip from range (-pi, pi) to (0,2*pi)
+        data[:,1] = data[:,1]+pi
+        # #interpolate data
+        # pT_grid, phip_grid = meshgrid(pT_array, phip_array)
+        # results = griddata((data[:,0], data[:,1]), data[:,2], (pT_grid, phip_grid), 
+        #                    method='linear', fill_value=0)
+        return reshape(data[:,2], (30, 48))
+
+
+    def calculateVnFromSpectra(self, spectra, pT_table, phip_table, order):
+        """
+            This function calculate vn given spectra using the same method as iS.
+        """  
+        #check dimension
+        # if not spectra.shape[0]==pT_table.shape[0]:
+        #     exit("calculateVnFromSpectra: pT dimension does not match! Aborting...")
+        # if not spectra.shape[1]==phip_table.shape[0]:
+        #     exit("calculateVnFromSpectra: phip dimension does not match! Aborting...")
+        # pT_value = pT_table[:,0]
+        # pT_weight= pT_table[:,1]
+        # phip_value = phip_table[:,0]
+        # phip_weight= phip_table[:,1]
+        #integrate alone phip
+        # phip_value_mat = tile(phip_value.reshape((1, len(phip_value))), (len(pT_value),1))
+        # phip_weight_mat= tile(phip_weight.reshape((1, len(phip_weight))), (len(pT_value),1))
+        # vn_diff_real_numerator = (spectra * phip_weight_mat * cos(order*phip_value_mat)).sum(axis=1)
+        # vn_diff_img_numerator  = (spectra * phip_weight_mat * sin(order*phip_value_mat)).sum(axis=1)
+        # pT_avg = (pT_boundaries[0:-1] + pT_boundaries[1:]) / 2.
+        # normalizationi = sum(normalization_diff*pT_value*pT_weight)
+        # vn_real = sum(vn_diff_real_numerator*pT_value*pT_weight)/(normalizationi+1e-18)
+        # vn_img  = sum(vn_diff_img_numerator*pT_value*pT_weight)/(normalizationi+1e-18)
+        #integrate along phip
+        nphip = 48
+        phip_boundaries = linspace(-pi, pi, nphip+1)
+        dphip = phip_boundaries[1] - phip_boundaries[0]
+        phip_avg = (phip_boundaries[0:-1] + phip_boundaries[1:]) / 2.
+        vn_diff_real_numerator = (spectra * dphip * cos(order*phip_avg)).sum(axis=1)
+        vn_diff_img_numerator  = (spectra * dphip * sin(order*phip_avg)).sum(axis=1)
+        normalization_diff = (spectra*dphip).sum(axis=1)
+        #integrate alone pT
+        npT = 30
+        pT_boundaries = linspace(0, 3, npT + 1)
+        dpT = pT_boundaries[1] - pT_boundaries[0]
+        pT_avg = (pT_boundaries[0:-1] + pT_boundaries[1:]) / 2.
+        #interpolate to specified pT range
+        vn_diff_real_numerator_interp = interp(pT_table[:,0], pT_avg, vn_diff_real_numerator)
+        vn_diff_img_numerator_interp  = interp(pT_table[:,0], pT_avg, vn_diff_img_numerator)
+        normalization_diff_interp = interp(pT_table[:,0], pT_avg, normalization_diff)
+        #integrate
+        normalizationi = sum(normalization_diff_interp*pT_table[:,0]*pT_table[:,1])
+        vn_real = sum(vn_diff_real_numerator_interp*pT_table[:,0]*pT_table[:,1])/(normalizationi+1e-18)
+        vn_img  = sum(vn_diff_img_numerator_interp*pT_table[:,0]*pT_table[:,1])/(normalizationi+1e-18)
+        #print "particle number: %g"%normalizationi
+        return vn_real, vn_img
+
+
+    def get_mean_vn_from_spectra(self, order = 2):
+        """
+            This function serve as a shell to calculate vn from particle spectra
+            for all events
+        """
+        particle_name = 'charged'
+        pid = self.pid_lookup[particle_name]
+        #load data table
+        pT_table = loadtxt('pT_gauss_table.dat')
+        phip_table = loadtxt('phi_gauss_table.dat')
+
+        print('calculating mean vn ...')
+        #pre-allocate space for result: 
+        mean_vn = zeros((self.tot_nev, 2))
+        # big loop
+        icounter = 0
+        for hydro_event_id in range(1, self.hydro_nev+1):
+            print "Processing hydro event %d"%hydro_event_id
+            urqmd_nev = self.db.executeSQLquery('select Number_of_UrQMDevents '
+                                                'from UrQMD_NevList '
+                                                'where hydroEventId=%d'%hydro_event_id).fetchall()[0][0]
+            for urqmd_event_id in range(1, urqmd_nev+1):
+                print "urqmd event %d finished!"%urqmd_event_id
+                spectra = self.get_particle_dndyptdptdphi_table(hydro_event_id, urqmd_event_id, 
+                          pT_table[:,0], phip_table[:,0])
+                vn_real, vn_img = self.calculateVnFromSpectra(spectra, pT_table, phip_table, order)
+                mean_vn[icounter, 0] = vn_real
+                mean_vn[icounter, 1] = vn_img
+                icounter += 1
+            icounter += 1
+        print('finished calculating mean vn!')
+        return mean_vn
+
+
 
     ###########################################################################
     # functions to collect particle emission function
@@ -985,6 +1101,23 @@ class AnalyzedDataReader(object):
 
         return (vn_avg)
 
+    def get_mean_vn_flow(self, particle_name, order):
+        """
+            read mean vn from analyzed data base
+        """
+        print("read mean v%d for %s ... " %(order, particle_name))
+        pid = self.pid_lookup[particle_name]
+
+        analyzed_table_name = 'mean_vn'
+        try:
+            vn_data = self.db.executeSQLquery(
+                "select vn_real, vn_real_err, vn_imag, vn_imag_err from %s "
+                "where pid=%d and n=%d"%(analyzed_table_name, pid, order)).fetchall()
+        except:
+            print "Cannnot read from table %s"%analyzed_table_name
+
+        return array(vn_data[0])
+
 
     def get_particle_meanPT(
             self, particle_name):
@@ -1045,6 +1178,26 @@ class AnalyzedDataReader(object):
         # meanpT_avg[1] = (sqrt(meanpT_avg[1] / totalN - meanpT_avg[0] ** 2)
         #                 / sqrt(self.tot_nev - 1))
         # return meanpT_avg
+
+    def get_particle_meanPTsquare(
+            self, particle_name):
+        """
+            compute mean pT of user specified particle. The rapidity 
+            range has been constraint on -0.5<=rapidity<=0.5 when 
+            collecting collecting pt spectra for identified particles.
+        """
+        print("read <pT^2> for %s ... " % particle_name)
+        pid = self.pid_lookup[particle_name]
+
+        analyzed_table_name = 'particle_meanPTsquare'
+        try:
+            pt_square_data = self.db.executeSQLquery(
+                "select mean_pTsquare_value, mean_pTsquare_error from %s "
+                "where pid=%d"%(analyzed_table_name, pid)).fetchall()
+        except:
+            print "Cannnot read from table %s"%analyzed_table_name
+
+        return array(pt_square_data)
 
     def get_diffvn_2pc_flow(
             self, particle_name, order, pT_range=linspace(0.0, 3.0, 31)):
@@ -1946,18 +2099,32 @@ if __name__ == "__main__":
         printHelpMessageandQuit()
     test = AnalyzedDataReader(str(argv[1]))
     # extract results
-    v2_ch_array = test.get_intevn_flow('charged', 'scalar_product', 2,
-                                    pT_range=(0.2, 3.0))
-    v3_ch_array = test.get_intevn_flow('charged', 'scalar_product', 3,
-                                    pT_range=(0.2, 3.0))
-    v2_ch_mean = sqrt(v2_ch_array[1]**2 + v2_ch_array[3]**2)
-    v2_ch_error= sqrt(v2_ch_array[2]**2 + v2_ch_array[4]**2)
-    v3_ch_mean = sqrt(v3_ch_array[1]**2 + v3_ch_array[3]**2)
-    v3_ch_error= sqrt(v3_ch_array[2]**2 + v3_ch_array[4]**2)    
+    v2_ch_array = test.get_mean_vn_flow(particle_name='charged', order=2)
+    v3_ch_array = test.get_mean_vn_flow(particle_name='charged', order=3)
+    v2_ch_mean = sqrt(v2_ch_array[0]**2 + v2_ch_array[2]**2)
+    v2_ch_error= sqrt(v2_ch_array[1]**2 + v2_ch_array[3]**2)
+    v3_ch_mean = sqrt(v3_ch_array[0]**2 + v3_ch_array[2]**2)
+    v3_ch_error= sqrt(v3_ch_array[1]**2 + v3_ch_array[3]**2)    
     results = append([v2_ch_mean, v2_ch_error], [v3_ch_mean, v3_ch_error])
     for aParticle in ['pion_p', 'kaon_p', 'proton']:
         meanPT =  test.get_particle_meanPT(aParticle)
         results = append(results, meanPT)
+
+    # <pT^2> for proton
+    results = append(results, test.get_particle_meanPTsquare('proton'))
+
+    # yield
+    temp, pion_yield, pion_yield_error = test.get_particle_yield('pion_p',
+                                rap_type = 'rapidity', rap_range=(-0.5, 0.5))
+    errorXoverY = lambda x,x_err,y,y_err: x/y*sqrt((x_err/x)**2.+(y_err/y)**2)
+    for aParticle in ['kaon_p', 'proton', 'lambda']:
+        a, a_yield, a_error = test.get_particle_yield(aParticle,
+                                rap_type = 'rapidity', rap_range=(-0.5, 0.5))
+        yield_ratio = pion_yield/a_yield
+        yield_ratio_error = errorXoverY(pion_yield, pion_yield_error,
+                                        a_yield, a_error)
+        results = append(results, [yield_ratio, yield_ratio_error])
+    # save
     savetxt('paramSearch_result.dat', results[None], 
         fmt='%10.8e', delimiter=' ')
 
