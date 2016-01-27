@@ -913,6 +913,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos
     if fit_flag:
         print "fitting the overall normalization factor ..."
         norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
+        if norm_factor_guess < 0.: norm_factor_guess = norm_factor_default
         if mode == "hybrid_search":
             norm_factor = fit_hydro(dN_deta, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess, chosen_centrality) # directly fit hydro at 10-20% centrality
         else:
