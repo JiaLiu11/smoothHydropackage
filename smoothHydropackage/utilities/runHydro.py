@@ -406,11 +406,11 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
     makedirs(hydro_folder_path)
     cmd = './VISHNew.e'
     if(pre_eq == True):
-        args = (' IINIT=2 IEOS=7 iEin=0 iLS=200'
+        args = (' IINIT=2 IEOS=7 iEin=0'
                 + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
                 % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
     else:
-        args = (' IINIT=2 IEOS=7 iEin=1 iLS=200'
+        args = (' IINIT=2 IEOS=7 iEin=1'
                 + ' T0=%6.4f Edec=%7.5f vis=%6.4f factor=%11.9f initialUread=%d visbulknorm=%.6f'
                 % (tau0, edec, vis, norm_factor, pre_eq, VisBulkNorm))
 
@@ -472,7 +472,7 @@ def run_hybrid_calculation(cen_string, model, ecm, hydro_path, iSS_path,
         remove(path.join(o2u_path, input_file))  # clean up
 
         #UrQMD
-        UrQMD_path = path.abspath(rootDir,'urqmd')
+        UrQMD_path = path.join(rootDir,'urqmd')
         input_file = 'OSCAR.input'
         output_file = 'particle_list.dat'
         if path.isfile(path.join(UrQMD_path, input_file)):
@@ -783,7 +783,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
             shutil.copy(aFile, results_folder_path)
     shutil.rmtree(iSS_folder_path)  # clean up
 
-    if parallel_mode != 0:
+    if parallel_mode > 1:
         # run subsequent programs in parallel
         result_files = split_iSS_events(number_of_split = parallel_mode,
                                         output_folder = results_folder_path)
@@ -805,7 +805,7 @@ def run_afterBurner(input_folder, cen_string, run_record, err_record, results_fo
         remove(path.join(o2u_path, input_file))  # clean up
 
         #UrQMD
-        UrQMD_path = path.abspath(rootDir,'urqmd')
+        UrQMD_path = path.join(rootDir,'urqmd')
         input_file = 'OSCAR.input'
         output_file = 'particle_list.dat'
         if path.isfile(path.join(UrQMD_path, input_file)):
