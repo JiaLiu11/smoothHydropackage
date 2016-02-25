@@ -541,6 +541,7 @@ int main()
     //----------------------------------------------
     calculate_and_output_spectra_and_vn(dN_dy, total_N, "Charged_ptcut02", 0, 9, 0.2, 3.6, 6);
     calculate_and_output_spectra_and_vn(dN_dy, total_N, "Charged_ptcut05", 0, 9, 0.5, 3.6, 6);
+    calculate_and_output_spectra_and_vn(dN_dy, total_N, "Charged_ptcut05_3", 0, 9, 0.5, 3.0, 6);
     calculate_and_output_spectra_and_vn(dN_dy, total_N, "Charged_ptcut03", 0, 9, 0.3, 3.6, 6);
     calculate_and_output_spectra_and_vn(dN_dy, total_N, "Charged_ptcut03_3", 0, 9, 0.3, 3.0, 6);
 

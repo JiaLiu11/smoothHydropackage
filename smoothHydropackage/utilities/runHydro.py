@@ -110,12 +110,8 @@ def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0, flow_orde
     cleanUpFolder(fs_result_path)
 
     # prepare initial file
-    if not flow_order==2:
-        shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path,flow_order, cen_string),
-                        path.join(fs_init_path, 'sd_event_1_block.dat'))
-    else:
-        shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
-                        path.join(fs_init_path, 'sd_event_1_block.dat'))
+    shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path,flow_order, cen_string),
+                    path.join(fs_init_path, 'sd_event_1_block.dat'))
     # fs
     cmd = './lm.e'
     args= (' event_mode=1 dEdyd2rdphip_dist=0 sfactor=1.0'
@@ -128,7 +124,8 @@ def run_pre_eq(initial_path, cen_string, run_record, err_record, tau0, flow_orde
     p.wait()
 
 def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
-                  norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq):
+                  norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq,
+                  flow_order = 2):
     """
         Perform pure hydro simulations with averaged initial conditions
     """
@@ -138,11 +135,11 @@ def run_hydro_evo(cen_string, hydro_path, run_record, err_record,
     cleanUpFolder(hydro_initial_path)
     # run pre-equilibrium
     if(pre_eq == True):
-        run_pre_eq(initial_path, cen_string, run_record, err_record, tau0)
+        run_pre_eq(initial_path, cen_string, run_record, err_record, tau0, flow_order)
         for aFile in glob(path.join(rootDir, 'fs/data/result/event_1/%g'%tau0, '*')):
             shutil.move(aFile, hydro_initial_path)
     else:
-        shutil.copyfile('%s/sdAvg_order_2_C%s.dat' % (initial_path, cen_string),
+        shutil.copyfile('%s/sdAvg_order_%d_C%s.dat' % (initial_path, flow_order, cen_string),
                     path.join(hydro_path, 'Initial', 'InitialSd.dat'))
 
     # hydro
@@ -337,13 +334,15 @@ def moveDB(source_folder, model, pre_eq):
 
 
 def run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
-                      norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq):
+                      norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq,
+                      flow_order = 2):
     """
         Perform pure hydro simulations + Cooper Frye freeze-out
         with averaged initial conditions
     """
     run_hydro_evo(cen_string, hydro_path, run_record, err_record,
-                  norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq)
+                  norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq,
+                  flow_order)
 
     # move hydro results to iS
     hydro_results_path = path.join(hydro_path, 'results')
@@ -616,6 +615,75 @@ def run_purehydro(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
         path.join(rootDir, 'RESULTS'))
 
 
+def collectPureHydroObservables(result_folder):
+    """
+        collect pure hydro output, 9 observables
+    """
+    # extract run parameters for result_folder
+    num_from_str = map(float, re.findall(r"[-+]?\d*\.\d+|\d+",result_folder))
+    taus, etas, tdec, VisBulkNorm = [num_from_str[i] for i in [5,1,4,6]]
+
+    # collect to file
+    results_path = path.join(rootDir, "RESULTS")
+    results_folder_path = path.join(results_path, result_folder)
+    flow_order = result_folder.split('_v')[-1]
+
+    # collect data
+    params_search_log = open(path.join('..', 'param_search_log_v%s.dat'%flow_order),
+        'a+')
+
+    # pT gaussian points and weights for pT range (0.3, 3) GeV/c
+    pT_new = np.array([0.33401871,0.37228685,0.44019231,0.53615897, \
+                 0.65793937,0.80267954,0.96698706,1.14701076, \
+                 1.33853107,1.53705894,1.73794106,1.93646893, \
+                 2.12798924,2.30801294,2.47232046,2.61706063, \
+                 2.73884103,2.83480769,2.90271315,2.94098129]);
+    pT_weight = np.array([2.31183844e-02,5.32893766e-02,8.22570634e-02, \
+                  1.09300723e-01,1.33783282e-01,1.55130323e-01, \
+                  1.72841338e-01,1.86501143e-01,1.95789545e-01, \
+                  2.00488821e-01,2.00488821e-01,1.95789545e-01, \
+                  1.86501143e-01,1.72841338e-01,1.55130323e-01, \
+                  1.33783282e-01,1.09300723e-01,8.22570634e-02, \
+                  5.32893766e-02,2.31183844e-02]);
+    # get flow anisotropy
+    vn_ch_data = np.loadtxt(path.join(results_folder_path, 'Charged_ptcut05_3_eta_integrated_vndata.dat'))
+    v2_ch = vn_ch_data[2, -1]
+    v3_ch = vn_ch_data[3, -1]
+    results = np.append([v2_ch, 0], [v3_ch, 0])
+
+    # get pion mean pt at pt range (0.3, 3) GeV/c
+    particle_name_list = ['pion_p', 'Kaon_p', 'proton']
+    for aParticle in particle_name_list:
+        spectra_data = np.loadtxt(path.join(results_folder_path, '%s_vndata.dat'%aParticle))
+        pt_array    = spectra_data[:, 0]
+        dndpt_array = spectra_data[:, 2]
+        dndpt_interped   = np.exp(np.interp(pT_new, pt_array, np.log(dndpt_array)))
+        dn_interped      = dndpt_interped*2.0*np.pi*pT_new
+        meanpt_aParticle = sum(dn_interped*pT_new*pT_weight)/sum(dn_interped*pT_weight)
+        results = np.append(results, [meanpt_aParticle, 0])
+        # append proton pt^2
+        if aParticle == "proton":
+            pt_square = sum(dn_interped*pT_new**2.*pT_weight)/sum(dn_interped*pT_weight)
+            results = np.append(results, [pt_square, 0])
+
+    # additional observables
+    # pion yield as reference
+    yield_data = np.loadtxt(path.join(results_folder_path, 'pion_p_integrated_vndata.dat'))
+    pion_p_yield = yield_data[0, 1]
+    particle_name_list = ['Kaon_p', 'proton', 'Lambda']
+    for aParticle in particle_name_list:
+        yield_data = np.loadtxt(path.join(results_folder_path, '%s_integrated_vndata.dat'%aParticle))
+        aParticle_yield = yield_data[0, 1]
+        yield_ratio = pion_p_yield/aParticle_yield
+        results = np.append(results, [yield_ratio, 0])
+
+    # write result
+    result_line = ("%.8f \t %.8f \t %.8f \t %.8f \t"%(taus, etas, tdec, VisBulkNorm)+
+        " ".join(['%10.8e'%x for x in results])+'\n')
+    params_search_log.write(result_line)
+    params_search_log.close()   
+
+
 def run_hybrid(model, ecm, norm_factor, vis, tdec, edec,
                tau0, VisBulkNorm, eos_name, chosen_centrality, pre_eq,
                parallel_mode):
@@ -705,6 +773,103 @@ def run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec,
         path.join(results_folder_path))
     shutil.copy(path.join(rootDir, err_record_file_name), 
         path.join(results_folder_path))
+
+
+def run_hydro_search(model, ecm, norm_factor, vis, tdec, edec,
+               tau0, VisBulkNorm, eos_name, chosen_centrality, pre_eq,
+               parallel_mode):
+    """
+    Shell for parameter search mode simulation. Only run the pure hydro part.
+    """
+    run_record_file_name = 'run_record_hydro_search.dat'
+    err_record_file_name = 'err_record_hydro_search.dat'
+    run_record = open(path.join(rootDir, run_record_file_name), 'w+')
+    err_record = open(path.join(rootDir, err_record_file_name), 'w+')
+    hydro_path = path.join(rootDir, 'VISHNew')
+    iS_path = path.join(rootDir, 'iS')
+    iS_results_path  = path.join(iS_path, 'results')
+
+    # rerun iInteSp for v2 at eta = (-2.5, 2.5)
+    iS_table_path = path.join(iS_path, 'tables')
+    # use 2.5 table
+    shutil.move(path.join(iS_table_path, 'particle_eta_table.dat'),
+        path.join(iS_table_path, 'particle_eta_table.dat_backup'))
+    shutil.copy(path.join(iS_table_path, 'particle_eta_uni_2.5_table.dat'),
+        path.join(iS_table_path, 'particle_eta_table.dat'))
+    p = subprocess.Popen('./iInteSp.e',
+                     shell=True, stdout=run_record, stderr=err_record,
+                     cwd=iS_path)
+    p.wait()
+
+
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm,
+                        eos_name, 2))
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    if path.exists(results_folder_path):
+        shutil.rmtree(results_folder_path)
+    makedirs(results_folder_path)
+
+    # save files after pure hydro run
+    worth_storing = []
+    for aGlob in ['*.dat']: #debug
+        worth_storing.extend(glob(path.join(iS_results_path, aGlob)))
+    for aFile in glob(path.join(iS_results_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, results_folder_path)
+
+    # collect v2 search result
+    collectPureHydroObservables(result_folder)
+
+    # ====================================================#
+    # run the search for v3
+    print "Start to search v3:"
+    if chosen_centrality != "All":
+        cen_string = chosen_centrality
+        try:
+            icen = cen_list.index(chosen_centrality)
+            cen_string = cen_list[icen]
+        except:
+            print "run_hydro_search: no such centrality available %s: "%chosen_centrality
+            sys.exit(0)
+    else:
+        print "run_hydro_search: cannot search all centrality for now!"
+        sys.exit(0)
+    run_hydro_with_iS(cen_string, hydro_path, iS_path, run_record, err_record,
+                      norm_factor, vis, edec, tau0, VisBulkNorm, pre_eq, 3)
+
+    # store results
+    result_folder = ('%s%.0fVis%gC%sTdec%gTau%gVisBulkNorm%g_%s_v%d'
+                     % (model, ecm, vis, chosen_centrality, tdec, tau0, VisBulkNorm, 
+                        eos_name, 3))
+    results_folder_path = path.join(rootDir, 'RESULTS', result_folder)
+    if path.exists(results_folder_path):
+        shutil.rmtree(results_folder_path)
+    makedirs(results_folder_path)
+
+    worth_storing = []
+    for aGlob in ['*.dat']: #debug
+        worth_storing.extend(glob(path.join(iS_results_path, aGlob)))
+    for aFile in glob(path.join(iS_results_path, '*')):
+        if aFile in worth_storing:
+            shutil.copy(aFile, results_folder_path)
+
+    # collect v3 search result
+    collectPureHydroObservables(result_folder)
+
+    # ================================================== #
+    # resume the eta = (-0.5, 0.5) table for multiplicity fitting
+    remove(path.join(iS_table_path, 'particle_eta_table.dat'))
+    shutil.move(path.join(iS_table_path, 'particle_eta_table.dat_backup'),
+        path.join(iS_table_path, 'particle_eta_table.dat'))    
+
+    run_record.close()
+    err_record.close()
+    shutil.copy(path.join(rootDir, run_record_file_name), 
+        path.join(results_folder_path))
+    shutil.copy(path.join(rootDir, err_record_file_name), 
+        path.join(results_folder_path))
+
 
 def set_eos(eos_name, tdec):
     """
@@ -914,7 +1079,7 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos
         print "fitting the overall normalization factor ..."
         norm_factor_guess = linearFitSfactor(tau0, vis, tdec, model, pre_eq) # guess the scaling factor from linear regression
         if norm_factor_guess < 0.: norm_factor_guess = norm_factor_default
-        if mode == "hybrid_search":
+        if mode == "hybrid_search" or mode == "hydro_search":
             norm_factor = fit_hydro(dN_deta, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess, chosen_centrality) # directly fit hydro at 10-20% centrality
         else:
             norm_factor = fit_hydro(dN_deta, vis, edec, tau0, VisBulkNorm, pre_eq, norm_factor_guess)
@@ -931,6 +1096,10 @@ def run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos
     elif mode =="hybrid_search":
         print "running hybrid search simulations for centrality bin(s): %s..."%chosen_centrality
         run_hybrid_search(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
+                   eos_name, chosen_centrality, pre_eq, parallel_mode)
+    elif mode == "hydro_search":
+        print "running hydro search simulations for centrality bins(s): %s..."%chosen_centrality
+        run_hydro_search(model, ecm, norm_factor, vis, tdec, edec, tau0, VisBulkNorm,
                    eos_name, chosen_centrality, pre_eq, parallel_mode)
     else:
         print sys.argv[0], ': invalid running mode', mode
@@ -1096,17 +1265,17 @@ if __name__ == "__main__":
         dN_deta = 312.5 * np.log10(ecm) - 64.8
     elif ecm_string in dn_deta_dict.keys():
         dN_deta = dn_deta_dict[ecm_string]
-        if mode=='hybrid_search':
+        if mode=='hybrid_search' or mode=='hydro_search':
             if ecm_string=='2760.0':
                 dN_deta = dn_deta_ECM2760_dict[chosen_centrality]
             else:
-                print 'Mode hybrid_search is currently not supported for %s GeV'%ecm_string
+                print 'Mode hybrid_search/hydro_search is currently not supported for %s GeV'%ecm_string
                 sys.exit(0)
     else:
         print sys.argv[0], ': invalid collision energy', ecm
         sys.exit(1)
 
-    if mode in ['hydro', 'hybrid', 'hybrid_search']:
+    if mode in ['hydro', 'hybrid', 'hybrid_search', 'hydro_search']:
         run_simulations(mode, model, ecm, dN_deta, vis, tdec, tau0, VisBulkNorm, eos_name,
                         cf_flag, fit_flag, chosen_centrality, collsys, pre_eq,
                         parallel_mode)
